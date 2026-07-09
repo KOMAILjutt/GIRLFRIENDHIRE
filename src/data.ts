@@ -1,3 +1,187 @@
+// ============================================
+// CITIES - ALL PAKISTAN (Complete Punjab Coverage)
+// ============================================
+
+export const CITIES = [
+  // ========== PUNJAB (Complete Coverage) ==========
+  'Lahore',
+  'Faisalabad',
+  'Rawalpindi',
+  'Gujranwala',
+  'Multan',
+  'Sialkot',
+  'Lahore Cantt',
+  'Kasur',
+  'Sheikhupura',
+  'Nankana Sahib',
+  'Jhang',
+  'Toba Tek Singh',
+  'Chiniot',
+  'Attock',
+  'Jhelum',
+  'Chakwal',
+  'Gujrat',
+  'Hafizabad',
+  'Mandi Bahauddin',
+  'Narowal',
+  'Khanewal',
+  'Lodhran',
+  'Vehari',
+  'Sargodha',
+  'Bhakkar',
+  'Khushab',
+  'Mianwali',
+  'Sahiwal',
+  'Okara',
+  'Pakpattan',
+  'Dera Ghazi Khan',
+  'Rajanpur',
+  'Layyah',
+  'Muzaffargarh',
+  'Taunsa',
+  'Bahawalpur',
+  'Bahawalnagar',
+  'Rahim Yar Khan',
+  'Wah Cantt',
+  'Taxila',
+  'Muridke',
+  'Kamoke',
+  'Burewala',
+  'Shakargarh',
+  'Sadiqabad',
+  'Jaranwala',
+  'Chishtian',
+  'Ahmedpur East',
+  'Kot Addu',
+  'Daska',
+  'Wazirabad',
+  'Kamalia',
+  'Arifwala',
+  'Mailsi',
+  'Gojra',
+  'Shujabad',
+  'Fort Abbas',
+  'Chichawatni',
+  'Pattoki',
+  'Renala Khurd',
+  'Sangla Hill',
+  'Kabirwala',
+  'Dunyapur',
+  'Kahror Pakka',
+  'Mian Channu',
+  'Hasilpur',
+  'Chunian',
+  'Bhalwal',
+  'Phalia',
+  'Zafarwal',
+  'Shorkot',
+  'Jalalpur Jattan',
+  'Kot Radha Kishan',
+  'Raiwind',
+
+  // ========== SINDH ==========
+  'Karachi',
+  'Hyderabad',
+  'Sukkur',
+  'Larkana',
+  'Nawabshah',
+  'Mirpur Khas',
+  'Jacobabad',
+  'Shikarpur',
+  'Khairpur',
+  'Dadu',
+  'Badin',
+  'Thatta',
+  'Umerkot',
+  'Tharparkar',
+  'Tando Allahyar',
+  'Tando Adam',
+  'Kotri',
+  'Rohri',
+  'Ghotki',
+  'Kashmore',
+  'Qambar',
+  'Sanghar',
+  'Matiari',
+  'Jamshoro',
+
+  // ========== KPK ==========
+  'Peshawar',
+  'Mardan',
+  'Abbottabad',
+  'Swat',
+  'Kohat',
+  'Dera Ismail Khan',
+  'Bannu',
+  'Mansehra',
+  'Nowshera',
+  'Charsadda',
+  'Swabi',
+  'Haripur',
+  'Battagram',
+  'Buner',
+  'Malakand',
+  'Lower Dir',
+  'Upper Dir',
+  'Shangla',
+  'Karak',
+  'Lakki Marwat',
+  'Tank',
+  'Hangu',
+
+  // ========== BALOCHISTAN ==========
+  'Quetta',
+  'Gwadar',
+  'Turbat',
+  'Khuzdar',
+  'Sibi',
+  'Chaman',
+  'Zhob',
+  'Loralai',
+  'Hub',
+  'Dera Murad Jamali',
+  'Nasirabad',
+  'Kalat',
+  'Mastung',
+  'Nushki',
+  'Panjgur',
+  'Kharan',
+
+  // ========== GILGIT-BALTISTAN ==========
+  'Gilgit',
+  'Skardu',
+  'Hunza',
+  'Chilas',
+
+  // ========== AZAD KASHMIR ==========
+  'Muzaffarabad',
+  'Mirpur',
+  'Kotli',
+  'Rawalakot',
+  'Bagh',
+  'Bhimber',
+
+  // ========== ISLAMABAD ==========
+  'Islamabad',
+
+  // ========== TOURIST AREAS ==========
+  'Murree',
+  'Nathia Gali',
+  'Bhurban',
+  'Naran',
+  'Kaghan',
+  'Swat Valley',
+  'Hunza Valley',
+  'Skardu Valley',
+  'Neelum Valley',
+  'Thandiani',
+  'Kalam'
+];
+
+// ============================================
+// SERVICES - ALL TIERS WITH NEW PRICES (20% DISCOUNT FOR FIRST TIME ONLY)
+// ============================================
+
 export const SERVICES = [
   // ========== BASIC TIER ==========
   {
@@ -8,8 +192,8 @@ export const SERVICES = [
     perHourRate: 299,
     description: 'Casual meetup over coffee or a meal',
     icon: 'Coffee',
-    discountPercent: 50,
-    discountedPrice: 999,
+    discountPercent: 20,
+    discountedPrice: 1599,
     tags: ['casual', 'food', 'relaxed']
   },
   {
@@ -20,20 +204,20 @@ export const SERVICES = [
     perHourRate: 499,
     description: 'Shop together at malls or markets',
     icon: 'ShoppingBag',
-    discountPercent: 50,
-    discountedPrice: 1999,
+    discountPercent: 20,
+    discountedPrice: 3199,
     tags: ['shopping', 'fashion', 'lifestyle']
   },
   {
     id: 'movie-cafe-hangout',
-    name: 'Movie/Café Hangout',
+    name: 'Movie/Cafe Hangout',
     category: 'Basic',
     basePrice: 1999,
     perHourRate: 299,
-    description: 'Watch a movie or chill at a café',
+    description: 'Watch a movie or chill at a cafe',
     icon: 'Film',
-    discountPercent: 50,
-    discountedPrice: 999,
+    discountPercent: 20,
+    discountedPrice: 1599,
     tags: ['entertainment', 'casual', 'fun']
   },
   {
@@ -44,8 +228,8 @@ export const SERVICES = [
     perHourRate: 399,
     description: 'Video calls, chats, online company',
     icon: 'Video',
-    discountPercent: 50,
-    discountedPrice: 1499,
+    discountPercent: 20,
+    discountedPrice: 2399,
     tags: ['online', 'virtual', 'remote']
   },
   {
@@ -56,8 +240,8 @@ export const SERVICES = [
     perHourRate: 249,
     description: 'Practice English, Urdu, or other languages',
     icon: 'Languages',
-    discountPercent: 50,
-    discountedPrice: 749,
+    discountPercent: 20,
+    discountedPrice: 1199,
     tags: ['learning', 'education', 'practice']
   },
 
@@ -70,8 +254,8 @@ export const SERVICES = [
     perHourRate: 799,
     description: 'Fine dining experience together',
     icon: 'Utensils',
-    discountPercent: 50,
-    discountedPrice: 3999,
+    discountPercent: 20,
+    discountedPrice: 6399,
     tags: ['dining', 'romantic', 'elegant']
   },
   {
@@ -82,8 +266,8 @@ export const SERVICES = [
     perHourRate: 899,
     description: 'Attend weddings, parties, corporate events',
     icon: 'Calendar',
-    discountPercent: 50,
-    discountedPrice: 4999,
+    discountPercent: 20,
+    discountedPrice: 7999,
     tags: ['events', 'social', 'professional']
   },
   {
@@ -94,8 +278,8 @@ export const SERVICES = [
     perHourRate: 999,
     description: 'Impress at business meetings or dinners',
     icon: 'Briefcase',
-    discountPercent: 50,
-    discountedPrice: 5999,
+    discountPercent: 20,
+    discountedPrice: 9599,
     tags: ['business', 'corporate', 'impress']
   },
   {
@@ -106,8 +290,8 @@ export const SERVICES = [
     perHourRate: 799,
     description: 'Experience festivals, concerts, cultural events',
     icon: 'Music',
-    discountPercent: 50,
-    discountedPrice: 3999,
+    discountPercent: 20,
+    discountedPrice: 6399,
     tags: ['culture', 'music', 'festivals']
   },
   {
@@ -118,8 +302,8 @@ export const SERVICES = [
     perHourRate: 599,
     description: 'Share hobbies: gaming, sports, art, etc.',
     icon: 'Gamepad2',
-    discountPercent: 50,
-    discountedPrice: 2999,
+    discountPercent: 20,
+    discountedPrice: 4799,
     tags: ['hobbies', 'fun', 'activities']
   },
 
@@ -132,8 +316,8 @@ export const SERVICES = [
     perHourRate: 1199,
     description: 'A complete day together, 8+ hours',
     icon: 'Sun',
-    discountPercent: 50,
-    discountedPrice: 7499,
+    discountPercent: 20,
+    discountedPrice: 11999,
     tags: ['full-day', 'exclusive', 'premium']
   },
   {
@@ -144,8 +328,8 @@ export const SERVICES = [
     perHourRate: 1499,
     description: 'Travel together within Pakistan',
     icon: 'Plane',
-    discountPercent: 50,
-    discountedPrice: 8999,
+    discountPercent: 20,
+    discountedPrice: 14399,
     tags: ['travel', 'adventure', 'explore']
   },
   {
@@ -156,8 +340,8 @@ export const SERVICES = [
     perHourRate: 799,
     description: 'Guided tours of cities and attractions',
     icon: 'Map',
-    discountPercent: 50,
-    discountedPrice: 4499,
+    discountPercent: 20,
+    discountedPrice: 7199,
     tags: ['tour', 'guide', 'sightseeing']
   },
   {
@@ -168,8 +352,8 @@ export const SERVICES = [
     perHourRate: 599,
     description: 'Someone to talk to, listen, and support',
     icon: 'Heart',
-    discountPercent: 50,
-    discountedPrice: 2999,
+    discountPercent: 20,
+    discountedPrice: 4799,
     tags: ['support', 'care', 'listening']
   },
 
@@ -182,8 +366,8 @@ export const SERVICES = [
     perHourRate: 1999,
     description: 'An intimate, romantic evening',
     icon: 'Moon',
-    discountPercent: 50,
-    discountedPrice: 12499,
+    discountPercent: 20,
+    discountedPrice: 19999,
     tags: ['romantic', 'intimate', 'exclusive']
   },
   {
@@ -194,8 +378,8 @@ export const SERVICES = [
     perHourRate: 2499,
     description: 'A full weekend getaway together',
     icon: 'Palmtree',
-    discountPercent: 50,
-    discountedPrice: 17499,
+    discountPercent: 20,
+    discountedPrice: 27999,
     tags: ['weekend', 'getaway', 'luxury']
   },
   {
@@ -206,29 +390,60 @@ export const SERVICES = [
     perHourRate: 1999,
     description: 'Multi-day vacation within Pakistan',
     icon: 'Umbrella',
-    discountPercent: 50,
-    discountedPrice: 14999,
+    discountPercent: 20,
+    discountedPrice: 23999,
     tags: ['vacation', 'holiday', 'luxury']
   }
 ];
 
-// Helper function to calculate final price
-export function calculatePrice(serviceId: string, hours: number = 1): number {
+// ============================================
+// FIRST-TIME DISCOUNT CONFIGURATION
+// ============================================
+
+export const FIRST_TIME_DISCOUNT_CONFIG = {
+  enabled: true,
+  discountPercent: 20,
+  description: '20% OFF on your first booking!',
+  badgeText: 'First Time 20% OFF'
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+export function calculatePrice(serviceId: string, hours: number = 1, isFirstTime: boolean = false): number {
   const service = SERVICES.find(s => s.id === serviceId);
   if (!service) return 0;
   
   const total = service.basePrice + (service.perHourRate * (hours - 1));
-  const discounted = total * (service.discountPercent / 100);
   
-  return Math.round(discounted);
+  // Apply 20% discount only for first-time users
+  if (isFirstTime && FIRST_TIME_DISCOUNT_CONFIG.enabled) {
+    return Math.round(total * 0.80); // 20% off
+  }
+  
+  return Math.round(total); // Full price
 }
 
-// Helper to get service by ID
 export function getServiceById(serviceId: string) {
   return SERVICES.find(s => s.id === serviceId);
 }
 
-// Helper to get services by category
 export function getServicesByCategory(category: string) {
   return SERVICES.filter(s => s.category === category);
+}
+
+export function getAllCategories(): string[] {
+  return [...new Set(SERVICES.map(s => s.category))];
+}
+
+export function getDiscountedPrice(basePrice: number, isFirstTime: boolean = false): number {
+  if (isFirstTime && FIRST_TIME_DISCOUNT_CONFIG.enabled) {
+    return Math.round(basePrice * 0.80);
+  }
+  return basePrice;
+}
+
+export function getFirstTimeDiscountAmount(basePrice: number): number {
+  return Math.round(basePrice * 0.20);
 }
