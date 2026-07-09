@@ -25,7 +25,7 @@ export default function SupportScreen({ messages, onSendMessage }: SupportScreen
 
     // Trigger standard automated response after 1 second
     setTimeout(() => {
-      let responseText = "Thanks for contacting Girlfriend Hire Support. A member of our verification team is online and reviewing your query. We typically respond within 5-10 minutes. How else can we assist you?";
+      let responseText = "Thanks for contacting YAARANA.PK Support. A member of our verification team is online and reviewing your query. We typically respond within 5-10 minutes. How else can we assist you?";
       
       // Smart matching
       const lower = userText.toLowerCase();
@@ -51,7 +51,7 @@ export default function SupportScreen({ messages, onSendMessage }: SupportScreen
   const faqs = [
     {
       q: "Is intimacy allowed?",
-      a: "Yes! Girlfriend Hire supports both platonic social activities and private personal intimacy based on mutual consent and agreement between adults. Please discuss preferences directly with your selected companion."
+      a: "Yes! YAARANA.PK supports both platonic social activities and private personal intimacy based on mutual consent and agreement between adults. Please discuss preferences directly with your selected companion."
     },
     {
       q: "How to pay verified companions?",
@@ -76,7 +76,7 @@ export default function SupportScreen({ messages, onSendMessage }: SupportScreen
           </div>
           <div>
             <h3 className="font-semibold text-xs text-slate-100 flex items-center gap-1 font-display">
-              Girlfriend Hire Support <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
+              YAARANA.PK Support <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
             </h3>
             <span className="text-[10px] text-emerald-400 font-medium">Regional Admins Online (Lahore & Karachi)</span>
           </div>
@@ -89,7 +89,7 @@ export default function SupportScreen({ messages, onSendMessage }: SupportScreen
         <div className="bg-[#6A0DAD]/10 border border-[#6A0DAD]/30 rounded-xl p-3 text-[11px] text-slate-400 flex gap-2.5">
           <HelpCircle className="w-4 h-4 text-[#E9D5FF] shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold text-slate-200 block mb-0.5">Welcome to Girlfriend Hire Support!</span>
+            <span className="font-bold text-slate-200 block mb-0.5">Welcome to YAARANA.PK Support!</span>
             Ask us anything about EasyPaisa transactions, companion registration, safety measures, or cancellation rules.
           </div>
         </div>

@@ -692,7 +692,7 @@ export default function AdminPanel({
                 Allow Gallery &amp; File Access?
               </h3>
               <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-                Girlfriend Hire Pakistan requires your permission to access local device photos, camera roll, and files. This allows the registration service provider or regional supervisor to select and upload your official verification pictures.
+                YAARANA.PK Pakistan requires your permission to access local device photos, camera roll, and files. This allows the registration service provider or regional supervisor to select and upload your official verification pictures.
               </p>
             </div>
 

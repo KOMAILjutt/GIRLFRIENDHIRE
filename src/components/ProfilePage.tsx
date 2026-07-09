@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Star, MapPin, Calendar, BookOpen, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Companion, ServiceItem } from '../types';
 import { SERVICES } from '../data';
 
@@ -11,6 +12,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ companion, onBack, onBook }: ProfilePageProps) {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const nextPhoto = () => {
     setActivePhotoIdx((prev) => (prev + 1) % companion.photos.length);
@@ -47,7 +49,8 @@ export default function ProfilePage({ companion, onBack, onBook }: ProfilePagePr
         <img
           src={companion.photos[activePhotoIdx]}
           alt={`${companion.name} full photo`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover cursor-zoom-in"
+          onClick={() => setSelectedImage(companion.photos[activePhotoIdx])}
           referrerPolicy="no-referrer"
         />
 
@@ -102,7 +105,7 @@ export default function ProfilePage({ companion, onBack, onBook }: ProfilePagePr
               activePhotoIdx === idx ? 'border-[#6A0DAD] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
             }`}
           >
-            <img src={ph} alt="thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <img src={ph} alt="thumb" className="w-full h-full object-cover" onClick={() => setSelectedImage(ph)} referrerPolicy="no-referrer" />
           </button>
         ))}
       </div>
@@ -208,6 +211,24 @@ export default function ProfilePage({ companion, onBack, onBook }: ProfilePagePr
           </div>
         )}
       </div>
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 cursor-zoom-out"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              src={selectedImage}
+              className="max-w-full max-h-full rounded-2xl shadow-2xl"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

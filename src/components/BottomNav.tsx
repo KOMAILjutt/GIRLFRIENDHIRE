@@ -13,7 +13,7 @@ export default function BottomNav({ activeTab, onTabChange, walletBalance, unrea
     { id: 'home', label: 'Home', icon: Home },
     { id: 'browse', label: 'Browse', icon: Search },
     { id: 'wallet', label: 'Wallet', icon: Wallet, badge: `${walletBalance.toLocaleString()} ₨` },
-    { id: 'support', label: 'Support', icon: MessageSquare, badge: unreadSupportCount > 0 ? '•' : undefined },
+    { id: 'support', label: 'Support/Admin', icon: MessageSquare, badge: unreadSupportCount > 0 ? '•' : undefined },
     { id: 'profile', label: 'Profile', icon: User }
   ];
 

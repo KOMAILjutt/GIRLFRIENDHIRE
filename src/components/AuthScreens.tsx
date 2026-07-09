@@ -5,7 +5,6 @@ import { CITIES, INTEREST_OPTIONS, SERVICES } from '../data';
 import { supabase } from '../supabaseClient';
 import { uploadToSupabaseStorage, resolveSignedUrls } from '../lib/storage';
 
-// Nice pre-selected avatar choices for fast client/companion setup testing
 const AVATAR_OPTIONS = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
@@ -566,9 +565,9 @@ export default function AuthScreens({
             <div className="inline-flex items-center justify-center p-3.5 bg-[#6A0DAD]/15 border border-[#6A0DAD]/40 rounded-2xl shadow-inner mb-2">
               <Sparkles className="w-8 h-8 text-[#E9D5FF]" />
             </div>
-            <h1 className="text-2xl font-black text-slate-100 tracking-tight font-display">Girlfriend Hire</h1>
+            <h1 className="text-2xl font-black text-slate-100 tracking-tight font-display">YAARANA.PK</h1>
             <p className="text-xs text-slate-400 font-medium px-2">
-              "Your Perfect Companion – Book by the Hour or Full Day"
+              BOOKING STARTS FROM 499 PKR ONLY FOR FIRST TIME USER
             </p>
           </div>
 
@@ -641,7 +640,7 @@ export default function AuthScreens({
           </form>
 
           <div className="text-center pt-2">
-            <span className="text-xs text-slate-400">New to Girlfriend Hire? </span>
+            <span className="text-xs text-slate-400">New to YAARANA.PK? </span>
             <button
               onClick={handleGoToSignup}
               className="text-xs text-[#E9D5FF] hover:text-white font-bold underline decoration-[#6A0DAD] cursor-pointer"
@@ -650,10 +649,7 @@ export default function AuthScreens({
             </button>
           </div>
 
-          {/* Quick Demo Assist */}
-          <div className="bg-[#6A0DAD]/10 border border-[#6A0DAD]/30 rounded-xl p-3 text-center text-[11px] text-[#E9D5FF]">
-            <strong>Testing Tip:</strong> Standard Client manual login is instantaneous. To test as a platform supervisor, type: <span className="font-mono text-white bg-[#0f071a] border border-white/5 px-1 rounded">admin@girlfriendhire.pk</span> as email.
-          </div>
+          
         </div>
       )}
 
@@ -800,7 +796,7 @@ export default function AuthScreens({
             <span className="text-[10px] text-purple-400 font-bold uppercase tracking-widest font-mono">Step 2 of 3</span>
             <h1 className="text-2xl font-black text-slate-100 tracking-tight font-display">Select Account Type</h1>
             <p className="text-xs text-slate-400 px-2 leading-relaxed">
-              Are you joining Girlfriend Hire as a Client (Hirer) or a Companion (Service Provider)?
+              Are you joining YAARANA.PK as a Client (Hirer) or a Companion (Service Provider)?
             </p>
           </div>
 
@@ -1017,7 +1013,7 @@ export default function AuthScreens({
               </button>
 
               <div className="text-center space-y-1.5 w-full">
-                <span className="text-[10px] text-purple-400 font-bold uppercase tracking-widest font-mono">Earn with Girlfriend Hire</span>
+                <span className="text-[10px] text-purple-400 font-bold uppercase tracking-widest font-mono">Earn with YAARANA.PK</span>
                 <h1 className="text-xl font-black text-slate-100 tracking-tight font-display">Companion Onboarding</h1>
                 <p className="text-[11px] text-slate-400 leading-relaxed px-1">
                   Submit verification documents and build your premium service portfolio.
@@ -1283,7 +1279,7 @@ export default function AuthScreens({
                 Allow Gallery &amp; File Access?
               </h3>
               <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-                Girlfriend Hire Pakistan requires your permission to access local device photos, camera roll, and files. This is used by the registration service provider to select and upload your official portfolio verification pictures.
+                YAARANA.PK Pakistan requires your permission to access local device photos, camera roll, and files. This is used by the registration service provider to select and upload your official portfolio verification pictures.
               </p>
             </div>
 

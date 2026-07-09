@@ -6,6 +6,7 @@ interface BookingModalProps {
   companion: Companion;
   service: ServiceItem;
   walletBalance: number;
+  hasPreviousBookings: boolean;
   onClose: () => void;
   onConfirmBooking: (bookingData: {
     serviceId: string;
@@ -15,6 +16,7 @@ interface BookingModalProps {
     meetingLocation: string;
     bookingDate: string;
     timeSlot: any;
+    paymentDetails: any;
   }) => void;
   onNavigateToWallet: () => void;
 }
@@ -23,6 +25,7 @@ export default function BookingModal({
   companion,
   service,
   walletBalance,
+  hasPreviousBookings,
   onClose,
   onConfirmBooking,
   onNavigateToWallet
@@ -36,6 +39,8 @@ export default function BookingModal({
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const [paymentSenderName, setPaymentSenderName] = useState('');
 
+  const isFirstBookingDiscount = !hasPreviousBookings;
+  
   // Payment Options
   const paymentOptions = [
     { name: 'Noman khan', number: '03173223559', method: 'Easypaisa' },
@@ -47,7 +52,8 @@ export default function BookingModal({
   // Formula: base + (extra hours × per hour rate)
   // Extra hours = chosen duration - 1
   const extraHours = duration - 1;
-  const totalPrice = service.basePrice + (extraHours * service.perHourRate);
+  const originalTotalPrice = service.basePrice + (extraHours * service.perHourRate);
+  const totalPrice = isFirstBookingDiscount ? originalTotalPrice * 0.3 : originalTotalPrice;
   const isBalanceSufficient = walletBalance >= totalPrice;
 
   // Minimum date calculation (at least 2 days from today)

@@ -75,6 +75,14 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
 
   return (
     <div id="companion-browse-page" className="p-4 space-y-6 pb-24 animate-fade-in">
+      {/* Special Offer Banner */}
+      <div className="bg-gradient-to-r from-[#6A0DAD] to-[#4c0780] rounded-2xl p-4 text-center text-white shadow-lg">
+        <h2 className="text-sm font-bold font-display uppercase tracking-wider">Start Booking from 500 Only!</h2>
+        <p className="text-[11px] mt-1 text-purple-100">
+          First person first time booking has 70% off!
+        </p>
+      </div>
+
       {/* Search & Filter Header Section */}
       <div className="bg-[#1a0b2e] border border-white/10 rounded-2xl p-4 space-y-3.5 shadow-xl">
         <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
