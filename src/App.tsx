@@ -1236,4 +1236,3 @@ export default function App() {
     </div>
   );
 }
-Update App.tsx with AI Studio features
