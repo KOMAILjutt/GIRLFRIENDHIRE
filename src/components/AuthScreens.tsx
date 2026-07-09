@@ -3,6 +3,7 @@ import { ShieldCheck, Mail, Lock, Phone, User, Check, Sparkles, Upload, Eye, Cam
 import { UserProfile, ServiceItem } from '../types';
 import { CITIES, INTEREST_OPTIONS, SERVICES } from '../data';
 import { supabase } from '../supabaseClient';
+import { uploadToSupabaseStorage, resolveSignedUrls } from '../lib/storage';
 
 // Nice pre-selected avatar choices for fast client/companion setup testing
 const AVATAR_OPTIONS = [
@@ -40,6 +41,7 @@ export default function AuthScreens({
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Female');
   const [age, setAge] = useState<number>(22);
   const [profilePhoto, setProfilePhoto] = useState(AVATAR_OPTIONS[0]); // Default first
+  const [rawProfilePhoto, setRawProfilePhoto] = useState<string | null>(null);
   
   // Companion specific
   const [bio, setBio] = useState('');
@@ -50,6 +52,7 @@ export default function AuthScreens({
     AVATAR_OPTIONS[3],
     AVATAR_OPTIONS[5]
   ]);
+  const [rawCompanionPhotos, setRawCompanionPhotos] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<{ serviceId: string; customBasePrice?: number; customPerHourRate?: number }[]>([]);
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -70,21 +73,50 @@ export default function AuthScreens({
     setPassword('');
   };
 
-  // Helper mock Google Authentication
-  const handleGoogleAuth = () => {
+  // Real Supabase Google Authentication
+  const handleGoogleAuth = async () => {
     setErrorMsg('');
     setSuccessMsg('');
-    const mockGoogleProfile: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name: 'Muhammad Haris',
-      email: 'haris.jutt@gmail.com',
-      role: null, // proceed to role selection
-      profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200'
-    };
-    setName(mockGoogleProfile.name);
-    setEmail(mockGoogleProfile.email);
-    setProfilePhoto(mockGoogleProfile.profilePhoto || AVATAR_OPTIONS[2]);
-    setScreen('role_select');
+    try {
+      // Use standard Supabase signInWithOAuth.
+      // To ensure it works inside the preview iframe, we first try to get the URL with skipBrowserRedirect
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) {
+        // If skipBrowserRedirect fails or isn't supported, fall back to standard redirection
+        const { error: redirectError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (redirectError) {
+          setErrorMsg(redirectError.message);
+        }
+        return;
+      }
+
+      if (data?.url) {
+        // Open the Google OAuth URL in a new window/tab to bypass iframe restrictions
+        window.open(data.url, '_blank');
+      } else {
+        // Fallback to direct redirect if no URL returned but no error
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'An error occurred during Google sign in.');
+    }
   };
 
   const handleManualLogin = async (e: React.FormEvent) => {
@@ -245,7 +277,7 @@ export default function AuthScreens({
   };
 
   // For client profile photo (single selection)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -255,42 +287,54 @@ export default function AuthScreens({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        setProfilePhoto(base64);
-      }
-    };
-    reader.readAsDataURL(file);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setErrorMsg('You must be logged in to upload files.');
+      return;
+    }
+
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const path = await uploadToSupabaseStorage(user.id, 'profile', 'avatar', file, extension);
+      setRawProfilePhoto(path);
+      const signed = await resolveSignedUrls([path]);
+      setProfilePhoto(signed[path]);
+    } catch (err) {
+      setErrorMsg('Failed to upload image.');
+      console.error(err);
+    }
   };
 
   // Handler for multiple gallery images using useRef validation
-  const handleMultipleFileChange = () => {
+  const handleMultipleFileChange = async () => {
     setErrorMsg('');
     const validFiles = validateImagesFromRef(fileInputMultipleRef);
     if (validFiles.length === 0) return;
 
-    const newPhotos = [...companionPhotos];
-    let loadedCount = 0;
-    const limit = Math.min(validFiles.length, 3);
-    
-    validFiles.forEach((file, index) => {
-      if (index < 3) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64 = event.target?.result as string;
-          if (base64) {
-            newPhotos[index] = base64;
-            loadedCount++;
-            if (loadedCount === limit) {
-              setCompanionPhotos([...newPhotos]);
-            }
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setErrorMsg('You must be logged in to upload files.');
+      return;
+    }
+
+    try {
+      const uploadPromises = validFiles.slice(0, 3).map(async (file) => {
+        const extension = file.name.split('.').pop() || 'jpg';
+        return await uploadToSupabaseStorage(user.id, 'companion', 'gallery', file, extension);
+      });
+
+      const paths = await Promise.all(uploadPromises);
+      setRawCompanionPhotos(paths);
+      const signedUrls = await resolveSignedUrls(paths);
+      
+      // Map paths to signed URLs
+      const signedPhotoUrls = paths.map(path => signedUrls[path]);
+      
+      setCompanionPhotos(signedPhotoUrls);
+    } catch (err) {
+      setErrorMsg('Failed to upload images.');
+      console.error(err);
+    }
   };
 
   // Handler for camera capture images using useRef validation
@@ -314,15 +358,19 @@ export default function AuthScreens({
   };
 
 
-  const handleClientSubmit = (e: React.FormEvent) => {
+  const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
     if (!profilePhoto) {
       setErrorMsg('Profile photo is required.');
       return;
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || `usr_${Date.now()}`;
+
     const clientProfile: UserProfile = {
-      id: `usr_${Date.now()}`,
+      id: userId,
       name,
       email,
       phone,
@@ -330,8 +378,31 @@ export default function AuthScreens({
       city,
       gender,
       age,
-      profilePhoto
+      profilePhoto,
+      rawProfilePhoto
     };
+
+    // Upsert into user_profiles table in Supabase
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        id: clientProfile.id,
+        name: clientProfile.name,
+        email: clientProfile.email,
+        phone: clientProfile.phone,
+        role: clientProfile.role,
+        city: clientProfile.city,
+        gender: clientProfile.gender,
+        age: clientProfile.age,
+        profile_photo: clientProfile.rawProfilePhoto || clientProfile.profilePhoto, // Use raw if available
+        wallet_balance: 15000.00 // initial balance
+      });
+
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+
     onAuthSuccess(clientProfile);
   };
 
@@ -362,7 +433,7 @@ export default function AuthScreens({
     }
   };
 
-  const handleCompanionSubmit = (e: React.FormEvent) => {
+  const handleCompanionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -386,6 +457,9 @@ export default function AuthScreens({
       return;
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || `usr_${Date.now()}`;
+
     // Submit for approval
     const companionObj = {
       id: `comp_${Date.now()}`,
@@ -395,13 +469,63 @@ export default function AuthScreens({
       city,
       bio,
       interests: selectedInterests,
-      photos: companionPhotos,
+      photos: rawCompanionPhotos.length > 0 ? rawCompanionPhotos : companionPhotos,
       services: selectedServices,
       rating: 5.0,
       reviews: [],
-      status: 'Pending',
+      status: 'Pending' as const,
       isVerified: false
     };
+
+    // Update or insert their user profile in Supabase
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .upsert({
+        id: userId,
+        name,
+        email,
+        phone,
+        role: 'Companion',
+        city,
+        gender,
+        age,
+        profile_photo: rawCompanionPhotos[0] || companionPhotos[0],
+        bio,
+        interests: selectedInterests,
+        photos: rawCompanionPhotos.length > 0 ? rawCompanionPhotos : companionPhotos,
+        services: selectedServices,
+        is_approved_companion: false
+      });
+
+    if (profileError) {
+      setErrorMsg(profileError.message);
+      return;
+    }
+
+    // Insert into companions table
+    const { error: companionError } = await supabase
+      .from('companions')
+      .insert({
+        id: companionObj.id,
+        name: companionObj.name,
+        age: companionObj.age,
+        gender: companionObj.gender,
+        city: companionObj.city,
+        bio: companionObj.bio,
+        interests: companionObj.interests,
+        photos: companionObj.photos,
+        services: companionObj.services,
+        rating: companionObj.rating,
+        reviews: companionObj.reviews,
+        status: companionObj.status,
+        is_verified: companionObj.isVerified,
+        user_id: userId
+      });
+
+    if (companionError) {
+      setErrorMsg(companionError.message);
+      return;
+    }
 
     onRegisterCompanionSubmit(companionObj);
     setCompanionSubmitted(true);

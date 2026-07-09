@@ -20,6 +20,7 @@ import {
 import { Companion, ServiceItem, Booking, UserProfile, SupportMessage } from './types';
 import { supabase } from './supabaseClient';
 import { SEED_COMPANIONS, SERVICES } from './data';
+import { resolveSignedUrls } from './lib/storage';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
 import WalletScreen from './components/WalletScreen';
@@ -37,6 +38,7 @@ export default function App() {
   const [walletBalance, setWalletBalance] = useState<number>(15000); // 15,000 PKR seeded starting balance
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   
   // Navigation & Modal states
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -80,30 +82,116 @@ export default function App() {
   // Local time UTC indicator
   const [utcTime, setUtcTime] = useState<string>('02:24:38');
 
-  // Load state from localStorage on init
+  // Load state from Supabase on init and auth change
   useEffect(() => {
-    // 1. Companions
-    const storedComps = localStorage.getItem('ch_companions_v1');
-    if (storedComps) {
-      setCompanions(JSON.parse(storedComps));
-    } else {
-      setCompanions(SEED_COMPANIONS);
-      localStorage.setItem('ch_companions_v1', JSON.stringify(SEED_COMPANIONS));
-    }
+    // 1. Fetch companions from Supabase (Seeded automatically if empty)
+    const fetchCompanions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companions')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    // 2. Current User (protected via Supabase Session)
+        if (data && data.length > 0) {
+          // 1. Collect all raw paths
+          const allPaths = data.flatMap(item => item.photos || []);
+          // 2. Resolve URLs
+          const signedUrlsMap = await resolveSignedUrls(allPaths);
+          
+          const mapped: Companion[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            age: item.age,
+            gender: item.gender,
+            city: item.city,
+            bio: item.bio,
+            interests: item.interests || [],
+            rawPhotos: item.photos || [],
+            photos: (item.photos || []).map(path => signedUrlsMap[path] || path),
+            services: item.services || [],
+            rating: Number(item.rating || 5.0),
+            reviews: item.reviews || [],
+            status: item.status || 'Approved',
+            isVerified: item.is_verified || false
+          }));
+          setCompanions(mapped);
+        } else {
+          // Empty companions table in Supabase: Seed it immediately with defaults so the app works beautifully
+          setCompanions(SEED_COMPANIONS);
+          const seedRows = SEED_COMPANIONS.map(c => ({
+            id: c.id,
+            name: c.name,
+            age: c.age,
+            gender: c.gender,
+            city: c.city,
+            bio: c.bio,
+            interests: c.interests,
+            photos: c.photos,
+            services: c.services,
+            rating: c.rating,
+            reviews: c.reviews,
+            status: c.status,
+            is_verified: c.isVerified
+          }));
+          await supabase.from('companions').insert(seedRows);
+        }
+      } catch (err) {
+        console.error('Error fetching companions:', err);
+      }
+    };
+    fetchCompanions();
+
+    // 2. Current User (protected via Supabase Session) and dependencies
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setCurrentUser(null);
-        localStorage.removeItem('ch_user_v1');
+        setWalletBalance(15000);
       } else {
-        const storedUser = localStorage.getItem('ch_user_v1');
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
+        const user = session.user;
+        
+        // Check for Regional Admin Special Account
+        if (user.email?.toLowerCase() === 'admin@girlfriendhire.pk') {
+          const adminProfile: UserProfile = {
+            id: user.id,
+            name: 'Regional Admin',
+            email: 'admin@girlfriendhire.pk',
+            role: 'Admin',
+            profilePhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
+          };
+          setCurrentUser(adminProfile);
+          return;
+        }
+
+        // Fetch from user_profiles table in Supabase
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          const mappedProfile: UserProfile = {
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            phone: profile.phone,
+            role: profile.role,
+            gender: profile.gender,
+            age: profile.age,
+            city: profile.city,
+            profilePhoto: profile.profile_photo,
+            bio: profile.bio,
+            interests: profile.interests,
+            photos: profile.photos,
+            services: profile.services,
+            isApprovedCompanion: profile.is_approved_companion
+          };
+          setCurrentUser(mappedProfile);
+          setWalletBalance(Number(profile.wallet_balance ?? 15000));
         } else {
-          const user = session.user;
-          const profile: UserProfile = {
+          // Create user profile if none exists in database
+          const newProfile = {
             id: user.id,
             name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Client',
             email: user.email || '',
@@ -112,51 +200,41 @@ export default function App() {
             city: 'Lahore',
             gender: 'Male',
             age: 26,
-            profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100'
+            profile_photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100',
+            wallet_balance: 15000.00
           };
-          setCurrentUser(profile);
-          localStorage.setItem('ch_user_v1', JSON.stringify(profile));
+
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert(newProfile);
+
+          if (!insertError) {
+            const mappedProfile: UserProfile = {
+              id: newProfile.id,
+              name: newProfile.name,
+              email: newProfile.email,
+              phone: newProfile.phone,
+              role: newProfile.role as any,
+              city: newProfile.city,
+              gender: newProfile.gender as any,
+              age: newProfile.age,
+              profilePhoto: newProfile.profile_photo,
+              isApprovedCompanion: false
+            };
+            setCurrentUser(mappedProfile);
+            setWalletBalance(15000);
+          }
         }
       }
     };
     checkSession();
 
-    // 3. Wallet Balance
-    const storedBalance = localStorage.getItem('ch_balance_v1');
-    if (storedBalance) {
-      setWalletBalance(parseFloat(storedBalance));
-    } else {
-      localStorage.setItem('ch_balance_v1', '15000');
-    }
-
-    // 4. Bookings
-    const storedBookings = localStorage.getItem('ch_bookings_v1');
-    if (storedBookings) {
-      setBookings(JSON.parse(storedBookings));
-    }
-
-    // 5. Support Messages
-    const storedMsgs = localStorage.getItem('ch_messages_v1');
-    if (storedMsgs) {
-      setSupportMessages(JSON.parse(storedMsgs));
-    } else {
-      const initialMsgs: SupportMessage[] = [
-        {
-          id: 'welcome_msg',
-          sender: 'admin',
-          text: "As-salamu alaykum! Welcome to Girlfriend Hire Pakistan support desk. We are active online to answer questions regarding companion approvals, EasyPaisa secure wallet transactions, or regional cancel policies. How can we help you today?",
-          timestamp: 'Just now'
-        }
-      ];
-      setSupportMessages(initialMsgs);
-      localStorage.setItem('ch_messages_v1', JSON.stringify(initialMsgs));
-    }
-
     // Sync auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         setCurrentUser(null);
-        localStorage.removeItem('ch_user_v1');
+      } else {
+        checkSession();
       }
     });
 
@@ -165,147 +243,311 @@ export default function App() {
     };
   }, []);
 
-  // Sync helpers with localStorage
-  const updateCompanions = (updated: Companion[]) => {
-    setCompanions(updated);
-    localStorage.setItem('ch_companions_v1', JSON.stringify(updated));
-  };
-
-  const updateCurrentUser = (user: UserProfile | null) => {
-    setCurrentUser(user);
-    if (user) {
-      localStorage.setItem('ch_user_v1', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('ch_user_v1');
+  // Fetch authenticated user dependencies whenever currentUser changes
+  useEffect(() => {
+    if (!currentUser) {
+      setBookings([]);
+      setSupportMessages([]);
+      setTransactions([]);
+      return;
     }
-  };
 
-  const updateWalletBalance = (newBalance: number) => {
-    setWalletBalance(newBalance);
-    localStorage.setItem('ch_balance_v1', newBalance.toString());
-  };
+    const fetchUserDependencies = async () => {
+      // 1. Bookings
+      let bkQuery = supabase.from('bookings').select('*');
+      if (currentUser.role !== 'Admin') {
+        bkQuery = bkQuery.eq('client_id', currentUser.id);
+      }
+      const { data: bkData } = await bkQuery.order('created_at', { ascending: false });
+      if (bkData) {
+        const mappedBk: Booking[] = bkData.map(item => ({
+          id: item.id,
+          clientId: item.client_id,
+          clientName: item.client_name,
+          companionId: item.companion_id,
+          companionName: item.companion_name,
+          companionPhoto: item.companion_photo,
+          serviceId: item.service_id,
+          serviceName: item.service_name,
+          durationHours: Number(item.duration_hours),
+          totalPrice: Number(item.total_price),
+          meetingLocation: item.meeting_location,
+          bookingDate: item.booking_date,
+          timeSlot: item.time_slot,
+          status: item.status,
+          createdAt: new Date(item.created_at).toLocaleDateString()
+        }));
+        setBookings(mappedBk);
+      }
 
-  const updateBookings = (updated: Booking[]) => {
-    setBookings(updated);
-    localStorage.setItem('ch_bookings_v1', JSON.stringify(updated));
-  };
+      // 2. Support Messages
+      let msgQuery = supabase.from('support_messages').select('*');
+      if (currentUser.role !== 'Admin') {
+        msgQuery = msgQuery.eq('user_id', currentUser.id);
+      }
+      const { data: msgData } = await msgQuery.order('created_at', { ascending: true });
+      if (msgData && msgData.length > 0) {
+        const mappedMsg: SupportMessage[] = msgData.map(item => ({
+          id: item.id,
+          sender: item.sender,
+          text: item.text,
+          timestamp: item.timestamp
+        }));
+        setSupportMessages(mappedMsg);
+      } else {
+        setSupportMessages([
+          {
+            id: 'welcome_msg',
+            sender: 'admin',
+            text: "As-salamu alaykum! Welcome to Girlfriend Hire Pakistan support desk. We are active online to answer questions regarding companion approvals, EasyPaisa secure wallet transactions, or regional cancel policies. How can we help you today?",
+            timestamp: 'Just now'
+          }
+        ]);
+      }
 
-  const updateSupportMessages = (updated: SupportMessage[]) => {
-    setSupportMessages(updated);
-    localStorage.setItem('ch_messages_v1', JSON.stringify(updated));
-  };
+      // 3. Transactions
+      let txQuery = supabase.from('transactions').select('*');
+      if (currentUser.role !== 'Admin') {
+        txQuery = txQuery.eq('user_id', currentUser.id);
+      }
+      const { data: txData } = await txQuery.order('created_at', { ascending: false });
+      if (txData) {
+        setTransactions(txData);
+      }
+    };
+
+    fetchUserDependencies();
+  }, [currentUser]);
 
   // Auth Screen Callbacks
   const handleAuthSuccess = (profile: UserProfile) => {
-    updateCurrentUser(profile);
+    setCurrentUser(profile);
     setActiveTab('home');
   };
 
-  const handleRegisterCompanionSubmit = (companionObj: any) => {
-    // Add pending companion to our pool
-    const updated = [companionObj, ...companions];
-    updateCompanions(updated);
+  const handleRegisterCompanionSubmit = async (companionObj: any) => {
+    if (!currentUser) return;
+
+    // Update profile role and details in Supabase user_profiles
+    await supabase
+      .from('user_profiles')
+      .update({
+        role: 'Companion',
+        bio: companionObj.bio,
+        interests: companionObj.interests,
+        photos: companionObj.photos,
+        services: companionObj.services,
+        is_approved_companion: false
+      })
+      .eq('id', currentUser.id);
+
+    // Also register companion applicant inside companions table
+    const companionRow = {
+      id: companionObj.id,
+      name: companionObj.name,
+      age: companionObj.age,
+      gender: companionObj.gender,
+      city: companionObj.city,
+      bio: companionObj.bio,
+      interests: companionObj.interests,
+      photos: companionObj.photos,
+      services: companionObj.services,
+      rating: companionObj.rating,
+      reviews: companionObj.reviews,
+      status: companionObj.status,
+      is_verified: companionObj.isVerified,
+      user_id: currentUser.id
+    };
+
+    const { error } = await supabase.from('companions').insert(companionRow);
+
+    if (!error) {
+      setCompanions(prev => [companionObj, ...prev]);
+      setCurrentUser(prev => prev ? {
+        ...prev,
+        role: 'Companion',
+        bio: companionObj.bio,
+        interests: companionObj.interests,
+        photos: companionObj.photos,
+        services: companionObj.services,
+        isApprovedCompanion: false
+      } : null);
+    }
   };
 
   // Support Chat Callbacks
-  const handleSendMessage = (text: string, sender: 'user' | 'admin') => {
+  const handleSendMessage = async (text: string, sender: 'user' | 'admin') => {
+    if (!currentUser) return;
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMessage: SupportMessage = {
+    const newMessage = {
       id: `msg_${Date.now()}`,
+      user_id: currentUser.id,
       sender,
       text,
       timestamp: time
     };
-    const updated = [...supportMessages, newMessage];
-    updateSupportMessages(updated);
+
+    const { error } = await supabase.from('support_messages').insert(newMessage);
+
+    if (!error) {
+      setSupportMessages(prev => [...prev, { id: newMessage.id, sender, text, timestamp: time }]);
+    }
   };
 
   // Wallet Top Up handler
-  const handleWalletTopUp = (amount: number, trxId: string) => {
-    // Credit Balance
+  const handleWalletTopUp = async (amount: number, trxId: string) => {
+    if (!currentUser) return;
     const newBal = walletBalance + amount;
-    updateWalletBalance(newBal);
 
-    // Save transaction
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      type: 'deposit' as const,
-      amount,
-      description: `EasyPaisa Top-Up (TRX: ${trxId})`,
-      date: new Date().toLocaleDateString(),
-      status: 'Completed' as const
-    };
-    
-    // Push transaction to list
-    const storedTxs = localStorage.getItem('ch_txs_v1');
-    const txsList = storedTxs ? JSON.parse(storedTxs) : [];
-    const updatedTxs = [newTx, ...txsList];
-    localStorage.setItem('ch_txs_v1', JSON.stringify(updatedTxs));
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ wallet_balance: newBal })
+      .eq('id', currentUser.id);
+
+    if (!error) {
+      setWalletBalance(newBal);
+
+      // Save transaction
+      const newTx = {
+        id: `tx_${Date.now()}`,
+        user_id: currentUser.id,
+        type: 'deposit' as const,
+        amount,
+        description: `EasyPaisa Top-Up (TRX: ${trxId})`,
+        date: new Date().toLocaleDateString(),
+        status: 'Completed' as const
+      };
+
+      await supabase.from('transactions').insert(newTx);
+      setTransactions(prev => [newTx, ...prev]);
+    }
   };
 
   // Admin Callbacks
-  const handleApproveRejectCompanion = (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
-    const updated = companions.map(c => {
-      if (c.id === id) {
-        return { 
-          ...c, 
-          status: newStatus,
-          isVerified: newStatus === 'Approved' ? true : c.isVerified 
-        };
-      }
-      return c;
-    });
-    updateCompanions(updated);
+  const handleApproveRejectCompanion = async (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
+    const updatedStatus = {
+      status: newStatus,
+      is_verified: newStatus === 'Approved' ? true : false
+    };
+
+    const { error } = await supabase
+      .from('companions')
+      .update(updatedStatus)
+      .eq('id', id);
+
+    if (!error) {
+      setCompanions(prev => prev.map(c => {
+        if (c.id === id) {
+          return { 
+            ...c, 
+            status: newStatus,
+            isVerified: newStatus === 'Approved' ? true : c.isVerified 
+          };
+        }
+        return c;
+      }));
+    }
   };
 
-  const handleDeleteCompanion = (id: string) => {
-    const updated = companions.filter(c => c.id !== id);
-    updateCompanions(updated);
+  const handleDeleteCompanion = async (id: string) => {
+    const { error } = await supabase
+      .from('companions')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setCompanions(prev => prev.filter(c => c.id !== id));
+    }
   };
 
-  const handleAddCompanionByAdmin = (newComp: Companion) => {
-    const updated = [newComp, ...companions];
-    updateCompanions(updated);
+  const handleAddCompanionByAdmin = async (newComp: Companion) => {
+    const row = {
+      id: newComp.id,
+      name: newComp.name,
+      age: newComp.age,
+      gender: newComp.gender,
+      city: newComp.city,
+      bio: newComp.bio,
+      interests: newComp.interests,
+      photos: newComp.photos,
+      services: newComp.services,
+      rating: newComp.rating,
+      reviews: newComp.reviews,
+      status: newComp.status,
+      is_verified: newComp.isVerified
+    };
+
+    const { error } = await supabase
+      .from('companions')
+      .insert(row);
+
+    if (!error) {
+      setCompanions(prev => [newComp, ...prev]);
+    }
   };
 
-  const handleApproveBooking = (bookingId: string) => {
-    const updated = bookings.map(b => b.id === bookingId ? { ...b, status: 'Confirmed' as const } : b);
-    updateBookings(updated);
+  const handleApproveBooking = async (bookingId: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'Confirmed' })
+      .eq('id', bookingId);
+
+    if (!error) {
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Confirmed' as const } : b));
+    }
   };
 
-  const handleRejectBooking = (bookingId: string) => {
+  const handleRejectBooking = async (bookingId: string) => {
     const target = bookings.find(b => b.id === bookingId);
     if (!target) return;
 
-    // Refund client wallet balance
+    // Refund client wallet balance in Supabase
     const updatedBalance = walletBalance + target.totalPrice;
-    updateWalletBalance(updatedBalance);
+    
+    await supabase
+      .from('user_profiles')
+      .update({ wallet_balance: updatedBalance })
+      .eq('id', target.clientId);
 
-    // Filter out booking from active scheduled meetups
-    const updatedBookings = bookings.filter(b => b.id !== bookingId);
-    updateBookings(updatedBookings);
+    // Delete booking from database
+    const { error } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingId);
 
-    // Save refund transaction log
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      type: 'refund' as const,
-      amount: target.totalPrice,
-      description: `Admin Refund: Escrow booking rejected for ${target.companionName}`,
-      date: new Date().toLocaleDateString(),
-      status: 'Completed' as const
-    };
-    const storedTxs = localStorage.getItem('ch_txs_v1');
-    const txsList = storedTxs ? JSON.parse(storedTxs) : [];
-    localStorage.setItem('ch_txs_v1', JSON.stringify([newTx, ...txsList]));
+    if (!error) {
+      setWalletBalance(updatedBalance);
+      setBookings(prev => prev.filter(b => b.id !== bookingId));
+
+      // Save refund transaction log
+      const newTx = {
+        id: `tx_${Date.now()}`,
+        user_id: target.clientId,
+        type: 'refund' as const,
+        amount: target.totalPrice,
+        description: `Admin Refund: Escrow booking rejected for ${target.companionName}`,
+        date: new Date().toLocaleDateString(),
+        status: 'Completed' as const
+      };
+
+      await supabase.from('transactions').insert(newTx);
+      setTransactions(prev => [newTx, ...prev]);
+    }
   };
 
-  const handleCompleteBooking = (bookingId: string) => {
-    const updated = bookings.map(b => b.id === bookingId ? { ...b, status: 'Completed' as const } : b);
-    updateBookings(updated);
+  const handleCompleteBooking = async (bookingId: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'Completed' })
+      .eq('id', bookingId);
+
+    if (!error) {
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Completed' as const } : b));
+    }
   };
 
   // Booking process confirmation
-  const handleConfirmBooking = (bookingData: {
+  const handleConfirmBooking = async (bookingData: {
     serviceId: string;
     serviceName: string;
     durationHours: number;
@@ -316,13 +558,17 @@ export default function App() {
   }) => {
     if (!selectedCompanion || !currentUser) return;
 
-    // Deduct wallet balance
+    // Deduct wallet balance in Supabase
     const updatedBalance = walletBalance - bookingData.totalPrice;
-    updateWalletBalance(updatedBalance);
+    await supabase
+      .from('user_profiles')
+      .update({ wallet_balance: updatedBalance })
+      .eq('id', currentUser.id);
 
     // Create active booking
+    const newBookingId = `bk_${Date.now()}`;
     const newBooking: Booking = {
-      id: `bk_${Date.now()}`,
+      id: newBookingId,
       clientId: currentUser.id,
       clientName: currentUser.name,
       companionId: selectedCompanion.id,
@@ -339,73 +585,110 @@ export default function App() {
       createdAt: new Date().toLocaleDateString()
     };
 
-    const updatedBookings = [newBooking, ...bookings];
-    updateBookings(updatedBookings);
-
-    // Save transaction
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      type: 'payment' as const,
-      amount: bookingData.totalPrice,
-      description: `Escrow payment: ${selectedCompanion.name} (${bookingData.serviceName})`,
-      date: new Date().toLocaleDateString(),
-      status: 'Completed' as const
+    const row = {
+      id: newBooking.id,
+      client_id: newBooking.clientId,
+      client_name: newBooking.clientName,
+      companion_id: newBooking.companionId,
+      companion_name: newBooking.companionName,
+      companion_photo: newBooking.companionPhoto,
+      service_id: newBooking.serviceId,
+      service_name: newBooking.serviceName,
+      duration_hours: newBooking.durationHours,
+      total_price: newBooking.totalPrice,
+      meeting_location: newBooking.meetingLocation,
+      booking_date: newBooking.bookingDate,
+      time_slot: newBooking.timeSlot,
+      status: newBooking.status
     };
-    
-    const storedTxs = localStorage.getItem('ch_txs_v1');
-    const txsList = storedTxs ? JSON.parse(storedTxs) : [];
-    const updatedTxs = [newTx, ...txsList];
-    localStorage.setItem('ch_txs_v1', JSON.stringify(updatedTxs));
 
-    // Clear Modal
-    setActiveBookingService(null);
-    setSelectedCompanion(null);
-    
-    // Jump to Profile screen to view their active bookings
-    navigateTo('profile', null);
+    const { error } = await supabase.from('bookings').insert(row);
 
-    // Simulated auto-confirm after 8 seconds (to mimic our 30-minute admin SLA prompt)
-    setTimeout(() => {
-      setBookings(prev => {
-        const isStillThere = prev.find(b => b.id === newBooking.id);
-        if (isStillThere && isStillThere.status === 'Pending') {
-          const updated = prev.map(b => b.id === newBooking.id ? { ...b, status: 'Confirmed' as const } : b);
-          localStorage.setItem('ch_bookings_v1', JSON.stringify(updated));
-          return updated;
+    if (!error) {
+      setWalletBalance(updatedBalance);
+      setBookings(prev => [newBooking, ...prev]);
+
+      // Save transaction
+      const newTx = {
+        id: `tx_${Date.now()}`,
+        user_id: currentUser.id,
+        type: 'payment' as const,
+        amount: bookingData.totalPrice,
+        description: `Escrow payment: ${selectedCompanion.name} (${bookingData.serviceName})`,
+        date: new Date().toLocaleDateString(),
+        status: 'Completed' as const
+      };
+      
+      await supabase.from('transactions').insert(newTx);
+      setTransactions(prev => [newTx, ...prev]);
+
+      // Clear Modal
+      setActiveBookingService(null);
+      setSelectedCompanion(null);
+      
+      // Jump to Profile screen to view their active bookings
+      navigateTo('profile', null);
+
+      // Simulated auto-confirm after 8 seconds (to mimic our 30-minute admin SLA prompt)
+      setTimeout(async () => {
+        const { data: bData } = await supabase
+          .from('bookings')
+          .select('status')
+          .eq('id', newBookingId)
+          .single();
+
+        if (bData && bData.status === 'Pending') {
+          await supabase
+            .from('bookings')
+            .update({ status: 'Confirmed' })
+            .eq('id', newBookingId);
+
+          setBookings(prev => prev.map(b => b.id === newBookingId ? { ...b, status: 'Confirmed' as const } : b));
         }
-        return prev;
-      });
-    }, 8000);
+      }, 8000);
+    }
   };
 
-  const handleCancelBooking = (bookingId: string, refundAmount: number) => {
-    // Refund money
+  const handleCancelBooking = async (bookingId: string, refundAmount: number) => {
+    if (!currentUser) return;
+
+    // Refund money in Supabase
     const newBal = walletBalance + refundAmount;
-    updateWalletBalance(newBal);
+    await supabase
+      .from('user_profiles')
+      .update({ wallet_balance: newBal })
+      .eq('id', currentUser.id);
 
-    // Remove or cancel booking
-    const updatedBookings = bookings.map(b => b.id === bookingId ? { ...b, status: 'Completed' as any } : b); // complete or delete
-    const filteredBookings = bookings.filter(b => b.id !== bookingId);
-    updateBookings(filteredBookings);
+    // Remove or cancel booking in database
+    const { error } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingId);
 
-    // Transaction log
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      type: 'refund' as const,
-      amount: refundAmount,
-      description: `Refund: Escrow release for cancelled booking`,
-      date: new Date().toLocaleDateString(),
-      status: 'Completed' as const
-    };
-    const storedTxs = localStorage.getItem('ch_txs_v1');
-    const txsList = storedTxs ? JSON.parse(storedTxs) : [];
-    localStorage.setItem('ch_txs_v1', JSON.stringify([newTx, ...txsList]));
+    if (!error) {
+      setWalletBalance(newBal);
+      setBookings(prev => prev.filter(b => b.id !== bookingId));
+
+      // Transaction log
+      const newTx = {
+        id: `tx_${Date.now()}`,
+        user_id: currentUser.id,
+        type: 'refund' as const,
+        amount: refundAmount,
+        description: `Refund: Escrow release for cancelled booking`,
+        date: new Date().toLocaleDateString(),
+        status: 'Completed' as const
+      };
+
+      await supabase.from('transactions').insert(newTx);
+      setTransactions(prev => [newTx, ...prev]);
+    }
   };
 
   // Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    updateCurrentUser(null);
+    setCurrentUser(null);
     setActiveBookingService(null);
     navigateTo('home', null);
     setNavHistory([{ tab: 'home', companion: null }]);
@@ -413,8 +696,7 @@ export default function App() {
 
   // Retrieve transactions helper
   const getTransactionsList = () => {
-    const storedTxs = localStorage.getItem('ch_txs_v1');
-    return storedTxs ? JSON.parse(storedTxs) : [];
+    return transactions;
   };
 
   return (
@@ -499,14 +781,14 @@ export default function App() {
             <div className="flex gap-1.5">
               {currentUser.role === 'Admin' ? (
                 <button
-                  onClick={() => updateCurrentUser({ ...currentUser, role: 'Client' })}
+                  onClick={() => setCurrentUser({ ...currentUser, role: 'Client' })}
                   className="text-[#E9D5FF]/70 hover:text-white font-bold uppercase tracking-wider cursor-pointer transition-colors"
                 >
                   [Switch to Client View]
                 </button>
               ) : (
                 <button
-                  onClick={() => updateCurrentUser({ ...currentUser, role: 'Admin' })}
+                  onClick={() => setCurrentUser({ ...currentUser, role: 'Admin' })}
                   className="text-[#E9D5FF] hover:text-white font-bold uppercase tracking-wider bg-[#6A0DAD]/35 px-2 py-0.5 rounded border border-[#6A0DAD]/60 shadow-[0_0_10px_rgba(106,13,173,0.25)] cursor-pointer transition-all"
                 >
                   [Demo Admin Panel]
@@ -685,7 +967,7 @@ export default function App() {
                       <div className="bg-[#1a0b2e] border border-white/5 rounded-2xl p-1 shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
                         <AuthScreens 
                           onAuthSuccess={(profile) => {
-                            updateCurrentUser(profile);
+                            setCurrentUser(profile);
                             setActiveTab('home');
                           }}
                           onRegisterCompanionSubmit={(companionObj) => {

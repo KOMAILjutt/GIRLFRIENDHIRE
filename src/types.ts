@@ -32,6 +32,7 @@ export interface Companion {
   reviews: Review[];
   status: 'Approved' | 'Pending' | 'Rejected';
   isVerified: boolean;
+  rawPhotos?: string[]; // Raw storage paths relative to bucket
 }
 
 export interface Booking {
@@ -62,10 +63,12 @@ export interface UserProfile {
   age?: number;
   city?: string;
   profilePhoto?: string;
+  rawProfilePhoto?: string;
   // Companion specific registration fields
   bio?: string;
   interests?: string[];
   photos?: string[];
+  rawPhotos?: string[];
   services?: { serviceId: string }[];
   isApprovedCompanion?: boolean;
 }
