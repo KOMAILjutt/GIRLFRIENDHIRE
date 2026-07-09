@@ -1,9 +1,8 @@
 export interface ServiceItem {
-  id: string;
-  name: string;
-  category: 'Basic' | 'Standard' | 'Premium' | 'Exclusive';
-  basePrice: number;
-  perHourRate: number;
+   description?: string;
+  icon?: string;
+  tags?: string[];
+  discountPercent?: number;
 }
 
 export interface Review {
