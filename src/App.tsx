@@ -299,7 +299,7 @@ export default function App() {
           {
             id: 'welcome_msg',
             sender: 'admin',
-            text: "As-salamu alaykum! Welcome to Girlfriend Hire Pakistan support desk. We are active online to answer questions regarding companion approvals, EasyPaisa secure wallet transactions, or regional cancel policies. How can we help you today?",
+            text: "As-salamu alaykum! Welcome to YAARANA.PK Pakistan support desk. We are active online to answer questions regarding companion approvals, EasyPaisa secure wallet transactions, or regional cancel policies. How can we help you today?",
             timestamp: 'Just now'
           }
         ]);
@@ -753,7 +753,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-xs font-black tracking-tight text-white flex items-center gap-1 uppercase font-display">
-              Girlfriend Hire <span className="text-[8px] bg-[#140822] text-[#E9D5FF] font-bold px-1.5 py-0.5 rounded border border-[#6A0DAD]/30">PK</span>
+              YAARANA.PK <span className="text-[8px] bg-[#140822] text-[#E9D5FF] font-bold px-1.5 py-0.5 rounded border border-[#6A0DAD]/30">PK</span>
             </h1>
             <span className="text-[9px] text-slate-400 block tracking-wide">Premium Marketplace</span>
           </div>
@@ -789,14 +789,7 @@ export default function App() {
                 />
               </div>
             </div>
-          ) : (
-            <button
-              onClick={() => navigateTo('home', null)}
-              className="bg-[#6A0DAD] hover:bg-[#6A0DAD]/90 text-white font-bold text-[10px] px-3.5 py-2 rounded-xl transition-all shadow-[0_0_10px_rgba(106,13,173,0.4)] cursor-pointer"
-            >
-              Get Started
-            </button>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -890,7 +883,7 @@ export default function App() {
                           Verified Pakistani Marketplace
                         </span>
                         <h2 className="text-xl font-black leading-tight tracking-tight font-display">
-                          Your Perfect Companion – <span className="text-[#E9D5FF]">Book by the Hour</span> or Full Day
+                          BOOKING STARTS FROM 499 PKR ONLY FOR FIRST TIME USER
                         </h2>
                         <p className="text-xs text-slate-300 leading-relaxed">
                           Hire local verified companions for dinners, event guides, shopping helper, or private companion dates. Fully secure, highly private, and personalized.
@@ -948,7 +941,7 @@ export default function App() {
                       {/* How It Works */}
                       <div className="bg-[#1a0b2e] border border-white/5 rounded-2xl p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
                         <h3 className="font-black text-xs text-slate-100 uppercase tracking-wider border-b border-white/10 pb-2 font-display">
-                          How Girlfriend Hire Works
+                          How YAARANA.PK Works
                         </h3>
                         <div className="space-y-3">
                           {/* Step 1 */}
@@ -1068,17 +1061,47 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Become a companion callout on profile */}
-                      <div className="bg-gradient-to-br from-[#1a0b2e] to-[#6A0DAD]/20 border border-[#6A0DAD]/35 rounded-2xl p-4 flex items-center justify-between shadow-md">
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-xs text-slate-100">Want to earn as a Companion?</h4>
-                          <p className="text-[10px] text-slate-400">Join Pakistan's elite local provider network and receive premium bookings.</p>
+                      {/* Approaching Booking Reminder */}
+                      {bookings.filter(b => {
+                        const today = new Date().toISOString().split('T')[0];
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                        return b.status === 'Confirmed' && (b.bookingDate === today || b.bookingDate === tomorrowStr);
+                      }).length > 0 && (
+                        <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-2xl p-4 flex items-start gap-3 shadow-md animate-pulse">
+                          <AlertCircle className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+                          <div className="space-y-0.5">
+                            <h4 className="font-bold text-xs text-[#D4AF37]">Upcoming Session Reminder</h4>
+                            <p className="text-[10px] text-slate-300">
+                              You have a confirmed booking within the next 24 hours. Please check your schedule and be ready at the meeting location on time.
+                            </p>
+                          </div>
                         </div>
+                      )}
+
+                      {/* Become a companion callout on profile */}
+                      <div className="space-y-3">
+                        <div className="bg-gradient-to-br from-[#1a0b2e] to-[#6A0DAD]/20 border border-[#6A0DAD]/35 rounded-2xl p-4 flex items-center justify-between shadow-md">
+                          <div className="space-y-1">
+                            <h4 className="font-bold text-xs text-slate-100">Want to earn as a Companion?</h4>
+                            <p className="text-[10px] text-slate-400">Join Pakistan's elite local provider network and receive premium bookings.</p>
+                          </div>
+                          <button
+                            onClick={() => setActiveTab('become_companion')}
+                            className="bg-[#6A0DAD] hover:bg-[#6A0DAD]/90 text-white font-bold text-[10px] px-3.5 py-2.5 rounded-xl transition-all shadow-md cursor-pointer whitespace-nowrap"
+                          >
+                            Become a Companion
+                          </button>
+                        </div>
+                        
+                        {/* Floating Contact Admin Button */}
                         <button
-                          onClick={() => setActiveTab('become_companion')}
-                          className="bg-[#6A0DAD] hover:bg-[#6A0DAD]/90 text-white font-bold text-[10px] px-3.5 py-2.5 rounded-xl transition-all shadow-md cursor-pointer whitespace-nowrap"
+                          onClick={() => setActiveTab('support')}
+                          className="w-full bg-[#1a0b2e] hover:bg-[#251042] border border-[#6A0DAD]/50 text-[#E9D5FF] font-bold text-xs py-3 rounded-2xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
                         >
-                          Become a Companion
+                          <MessageSquare className="w-4 h-4" />
+                          Contact Admin Support
                         </button>
                       </div>
 
@@ -1199,6 +1222,7 @@ export default function App() {
           companion={selectedCompanion}
           service={activeBookingService}
           walletBalance={walletBalance}
+          hasPreviousBookings={bookings.length > 0}
           onClose={() => setActiveBookingService(null)}
           onConfirmBooking={handleConfirmBooking}
           onNavigateToWallet={() => {
@@ -1212,3 +1236,4 @@ export default function App() {
     </div>
   );
 }
+Update App.tsx with AI Studio features
