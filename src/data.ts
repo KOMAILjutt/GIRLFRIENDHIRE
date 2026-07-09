@@ -1,449 +1,448 @@
 // ============================================
-// CITIES - ALL PAKISTAN (Complete Punjab Coverage)
+// TYPES (inline to avoid missing imports)
+// ============================================
+
+export interface ServiceItem {
+  id: string;
+  name: string;
+  category: string;
+  basePrice: number;
+  perHourRate: number;
+  description: string;
+  icon: string;
+  tags: string[];
+  discountPercent: number;
+}
+
+export interface Review {
+  id: string;
+  reviewerName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+export interface CompanionService {
+  serviceId: string;
+}
+
+export interface Companion {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  city: string;
+  bio: string;
+  interests: string[];
+  photos: string[];
+  services: CompanionService[];
+  rating: number;
+  reviews: Review[];
+  status: string;
+  isVerified: boolean;
+}
+
+// ============================================
+// CITIES - FLAT ARRAY (for BrowsePage.tsx compatibility)
 // ============================================
 
 export const CITIES = [
-  // ========== PUNJAB (Complete Coverage) ==========
-  'Lahore',
-  'Faisalabad',
-  'Rawalpindi',
-  'Gujranwala',
-  'Multan',
-  'Sialkot',
-  'Lahore Cantt',
-  'Kasur',
-  'Sheikhupura',
-  'Nankana Sahib',
-  'Jhang',
-  'Toba Tek Singh',
-  'Chiniot',
-  'Attock',
-  'Jhelum',
-  'Chakwal',
-  'Gujrat',
-  'Hafizabad',
-  'Mandi Bahauddin',
-  'Narowal',
-  'Khanewal',
-  'Lodhran',
-  'Vehari',
-  'Sargodha',
-  'Bhakkar',
-  'Khushab',
-  'Mianwali',
-  'Sahiwal',
-  'Okara',
-  'Pakpattan',
-  'Dera Ghazi Khan',
-  'Rajanpur',
-  'Layyah',
-  'Muzaffargarh',
-  'Taunsa',
-  'Bahawalpur',
-  'Bahawalnagar',
-  'Rahim Yar Khan',
-  'Wah Cantt',
-  'Taxila',
-  'Muridke',
-  'Kamoke',
-  'Burewala',
-  'Shakargarh',
-  'Sadiqabad',
-  'Jaranwala',
-  'Chishtian',
-  'Ahmedpur East',
-  'Kot Addu',
-  'Daska',
-  'Wazirabad',
-  'Kamalia',
-  'Arifwala',
-  'Mailsi',
-  'Gojra',
-  'Shujabad',
-  'Fort Abbas',
-  'Chichawatni',
-  'Pattoki',
-  'Renala Khurd',
-  'Sangla Hill',
-  'Kabirwala',
-  'Dunyapur',
-  'Kahror Pakka',
-  'Mian Channu',
-  'Hasilpur',
-  'Chunian',
-  'Bhalwal',
-  'Phalia',
-  'Zafarwal',
-  'Shorkot',
-  'Jalalpur Jattan',
-  'Kot Radha Kishan',
-  'Raiwind',
-
-  // ========== SINDH ==========
-  'Karachi',
-  'Hyderabad',
-  'Sukkur',
-  'Larkana',
-  'Nawabshah',
-  'Mirpur Khas',
-  'Jacobabad',
-  'Shikarpur',
-  'Khairpur',
-  'Dadu',
-  'Badin',
-  'Thatta',
-  'Umerkot',
-  'Tharparkar',
-  'Tando Allahyar',
-  'Tando Adam',
-  'Kotri',
-  'Rohri',
-  'Ghotki',
-  'Kashmore',
-  'Qambar',
-  'Sanghar',
-  'Matiari',
-  'Jamshoro',
-
-  // ========== KPK ==========
-  'Peshawar',
-  'Mardan',
-  'Abbottabad',
-  'Swat',
-  'Kohat',
-  'Dera Ismail Khan',
-  'Bannu',
-  'Mansehra',
-  'Nowshera',
-  'Charsadda',
-  'Swabi',
-  'Haripur',
-  'Battagram',
-  'Buner',
-  'Malakand',
-  'Lower Dir',
-  'Upper Dir',
-  'Shangla',
-  'Karak',
-  'Lakki Marwat',
-  'Tank',
-  'Hangu',
-
-  // ========== BALOCHISTAN ==========
-  'Quetta',
-  'Gwadar',
-  'Turbat',
-  'Khuzdar',
-  'Sibi',
-  'Chaman',
-  'Zhob',
-  'Loralai',
-  'Hub',
-  'Dera Murad Jamali',
-  'Nasirabad',
-  'Kalat',
-  'Mastung',
-  'Nushki',
-  'Panjgur',
-  'Kharan',
-
-  // ========== GILGIT-BALTISTAN ==========
-  'Gilgit',
-  'Skardu',
-  'Hunza',
-  'Chilas',
-
-  // ========== AZAD KASHMIR ==========
-  'Muzaffarabad',
-  'Mirpur',
-  'Kotli',
-  'Rawalakot',
-  'Bagh',
-  'Bhimber',
-
-  // ========== ISLAMABAD ==========
+  // Punjab - Major
+  'Lahore', 'Faisalabad', 'Rawalpindi', 'Gujranwala', 'Multan', 'Sialkot',
+  'Bahawalpur', 'Sargodha', 'Gujrat', 'Sheikhupura', 'Jhelum', 'Murree',
+  'Sahiwal', 'Okara', 'Kasur', 'Rahim Yar Khan', 'Dera Ghazi Khan',
+  'Chiniot', 'Wah Cantt', 'Taxila', 'Muridke', 'Kamoke', 'Burewala',
+  'Shakargarh', 'Sadiqabad', 'Jaranwala', 'Chishtian', 'Ahmedpur East',
+  'Kot Addu', 'Daska', 'Wazirabad', 'Kamalia', 'Arifwala', 'Mailsi',
+  'Gojra', 'Shujabad', 'Fort Abbas', 'Chichawatni', 'Pattoki',
+  'Renala Khurd', 'Sangla Hill', 'Kabirwala', 'Dunyapur',
+  'Kahror Pakka', 'Mian Channu', 'Hasilpur', 'Chunian', 'Bhalwal',
+  'Phalia', 'Zafarwal', 'Shorkot', 'Jalalpur Jattan',
+  'Kot Radha Kishan', 'Raiwind', 'Lahore Cantt', 'Kasur', 'Nankana Sahib',
+  'Jhang', 'Toba Tek Singh', 'Attock', 'Chakwal', 'Hafizabad',
+  'Mandi Bahauddin', 'Narowal', 'Khanewal', 'Lodhran', 'Vehari',
+  'Bhakkar', 'Khushab', 'Mianwali', 'Pakpattan', 'Rajanpur',
+  'Layyah', 'Muzaffargarh', 'Taunsa', 'Bahawalnagar',
+  
+  // Sindh
+  'Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah',
+  'Mirpur Khas', 'Jacobabad', 'Shikarpur', 'Khairpur', 'Dadu',
+  'Badin', 'Thatta', 'Umerkot', 'Tharparkar', 'Tando Allahyar',
+  'Tando Adam', 'Kotri', 'Rohri', 'Ghotki', 'Kashmore',
+  'Qambar', 'Sanghar', 'Matiari', 'Jamshoro',
+  
+  // KPK
+  'Peshawar', 'Mardan', 'Abbottabad', 'Swat', 'Kohat',
+  'Dera Ismail Khan', 'Bannu', 'Mansehra', 'Nowshera',
+  'Charsadda', 'Swabi', 'Haripur', 'Battagram', 'Buner',
+  'Malakand', 'Lower Dir', 'Upper Dir', 'Shangla', 'Karak',
+  'Lakki Marwat', 'Tank', 'Hangu',
+  
+  // Balochistan
+  'Quetta', 'Gwadar', 'Turbat', 'Khuzdar', 'Sibi',
+  'Chaman', 'Zhob', 'Loralai', 'Hub', 'Dera Murad Jamali',
+  'Nasirabad', 'Kalat', 'Mastung', 'Nushki', 'Panjgur', 'Kharan',
+  
+  // Gilgit-Baltistan
+  'Gilgit', 'Skardu', 'Hunza', 'Chilas',
+  
+  // Azad Kashmir
+  'Muzaffarabad', 'Mirpur', 'Kotli', 'Rawalakot',
+  'Bagh', 'Bhimber',
+  
+  // Islamabad
   'Islamabad',
-
-  // ========== TOURIST AREAS ==========
-  'Murree',
-  'Nathia Gali',
-  'Bhurban',
-  'Naran',
-  'Kaghan',
-  'Swat Valley',
-  'Hunza Valley',
-  'Skardu Valley',
-  'Neelum Valley',
-  'Thandiani',
-  'Kalam'
+  
+  // Tourist Areas
+  'Murree', 'Nathia Gali', 'Bhurban', 'Naran', 'Kaghan',
+  'Swat Valley', 'Hunza Valley', 'Skardu Valley',
+  'Neelum Valley', 'Thandiani', 'Kalam'
 ];
 
 // ============================================
-// SERVICES - ALL TIERS WITH NEW PRICES (20% DISCOUNT FOR FIRST TIME ONLY)
+// SERVICES - 18 SERVICES WITH NEW PRICES (20% FIRST-TIME DISCOUNT)
 // ============================================
 
-export const SERVICES = [
-  // ========== BASIC TIER ==========
+export const SERVICES: ServiceItem[] = [
+  // --- BASIC TIER ---
   {
-    id: 'coffee-meal-date',
+    id: 'coffee-date',
     name: 'Coffee/Meal Date',
     category: 'Basic',
     basePrice: 1999,
-    perHourRate: 299,
-    description: 'Casual meetup over coffee or a meal',
+    perHourRate: 500,
+    description: 'A relaxed meeting over coffee or a light meal at your favorite local cafe.',
     icon: 'Coffee',
-    discountPercent: 20,
-    discountedPrice: 1599,
-    tags: ['casual', 'food', 'relaxed']
+    tags: ['Social', 'Casual', 'Introductory'],
+    discountPercent: 20
   },
   {
-    id: 'shopping-companion',
+    id: 'shopping-comp',
     name: 'Shopping Companion',
     category: 'Basic',
     basePrice: 3999,
-    perHourRate: 499,
-    description: 'Shop together at malls or markets',
+    perHourRate: 800,
+    description: 'Get an honest opinion and a helping hand while you shop at the mall or local bazaars.',
     icon: 'ShoppingBag',
-    discountPercent: 20,
-    discountedPrice: 3199,
-    tags: ['shopping', 'fashion', 'lifestyle']
+    tags: ['Shopping', 'Advice', 'Social'],
+    discountPercent: 20
   },
   {
-    id: 'movie-cafe-hangout',
+    id: 'movie-hangout',
     name: 'Movie/Cafe Hangout',
     category: 'Basic',
     basePrice: 1999,
-    perHourRate: 299,
-    description: 'Watch a movie or chill at a cafe',
+    perHourRate: 600,
+    description: 'Catch the latest cinema release or lounge at a trendy cafe with great company.',
     icon: 'Film',
-    discountPercent: 20,
-    discountedPrice: 1599,
-    tags: ['entertainment', 'casual', 'fun']
+    tags: ['Entertainment', 'Casual'],
+    discountPercent: 20
   },
   {
-    id: 'virtual-companion',
+    id: 'virtual-comp',
     name: 'Virtual Companion',
     category: 'Basic',
     basePrice: 2999,
-    perHourRate: 399,
-    description: 'Video calls, chats, online company',
+    perHourRate: 1000,
+    description: 'Online interaction, video calls, or chat sessions for meaningful conversation from anywhere.',
     icon: 'Video',
-    discountPercent: 20,
-    discountedPrice: 2399,
-    tags: ['online', 'virtual', 'remote']
+    tags: ['Online', 'Global', 'Chat'],
+    discountPercent: 20
   },
   {
-    id: 'language-practice',
+    id: 'lang-practice',
     name: 'Language Practice',
     category: 'Basic',
     basePrice: 1499,
-    perHourRate: 249,
-    description: 'Practice English, Urdu, or other languages',
+    perHourRate: 400,
+    description: 'Improve your Urdu, Punjabi, or English through casual conversation with a native speaker.',
     icon: 'Languages',
-    discountPercent: 20,
-    discountedPrice: 1199,
-    tags: ['learning', 'education', 'practice']
+    tags: ['Learning', 'Communication'],
+    discountPercent: 20
   },
 
-  // ========== STANDARD TIER ==========
+  // --- STANDARD TIER ---
   {
     id: 'dinner-date',
     name: 'Dinner Date',
     category: 'Standard',
     basePrice: 7999,
-    perHourRate: 799,
-    description: 'Fine dining experience together',
+    perHourRate: 1500,
+    description: 'An elegant evening dinner experience at a fine-dining restaurant.',
     icon: 'Utensils',
-    discountPercent: 20,
-    discountedPrice: 6399,
-    tags: ['dining', 'romantic', 'elegant']
+    tags: ['Formal', 'Dining', 'Evening'],
+    discountPercent: 20
   },
   {
-    id: 'event-companion',
+    id: 'event-comp',
     name: 'Event Companion',
     category: 'Standard',
     basePrice: 9999,
-    perHourRate: 899,
-    description: 'Attend weddings, parties, corporate events',
-    icon: 'Calendar',
-    discountPercent: 20,
-    discountedPrice: 7999,
-    tags: ['events', 'social', 'professional']
+    perHourRate: 2000,
+    description: 'Perfect for weddings, corporate gatherings, or parties where you need a plus-one.',
+    icon: 'Ticket',
+    tags: ['Events', 'Weddings', 'Social'],
+    discountPercent: 20
   },
   {
-    id: 'professional-plus1',
+    id: 'pro-plus-one',
     name: 'Professional +1',
     category: 'Standard',
     basePrice: 11999,
-    perHourRate: 999,
-    description: 'Impress at business meetings or dinners',
+    perHourRate: 2500,
+    description: 'Sophisticated company for business dinners, networking events, or professional galas.',
     icon: 'Briefcase',
-    discountPercent: 20,
-    discountedPrice: 9599,
-    tags: ['business', 'corporate', 'impress']
+    tags: ['Professional', 'Corporate', 'Formal'],
+    discountPercent: 20
   },
   {
-    id: 'cultural-festival',
+    id: 'cultural-fest',
     name: 'Cultural/Festival',
     category: 'Standard',
     basePrice: 7999,
-    perHourRate: 799,
-    description: 'Experience festivals, concerts, cultural events',
-    icon: 'Music',
-    discountPercent: 20,
-    discountedPrice: 6399,
-    tags: ['culture', 'music', 'festivals']
+    perHourRate: 1200,
+    description: 'Explore local festivals, Basant, or cultural exhibits with a knowledgeable local.',
+    icon: 'Map',
+    tags: ['Culture', 'Outdoor', 'Traditional'],
+    discountPercent: 20
   },
   {
     id: 'hobby-partner',
     name: 'Hobby Partner',
     category: 'Standard',
     basePrice: 5999,
-    perHourRate: 599,
-    description: 'Share hobbies: gaming, sports, art, etc.',
-    icon: 'Gamepad2',
-    discountPercent: 20,
-    discountedPrice: 4799,
-    tags: ['hobbies', 'fun', 'activities']
+    perHourRate: 1000,
+    description: 'Enjoy activities like gym sessions, tennis, or gaming with a dedicated partner.',
+    icon: 'Gamepad',
+    tags: ['Activities', 'Fitness', 'Fun'],
+    discountPercent: 20
   },
 
-  // ========== PREMIUM TIER ==========
+  // --- PREMIUM TIER ---
   {
-    id: 'full-day-companion',
+    id: 'full-day-comp',
     name: 'Full Day Companion',
     category: 'Premium',
     basePrice: 14999,
-    perHourRate: 1199,
-    description: 'A complete day together, 8+ hours',
+    perHourRate: 1800,
+    description: 'Complete day-long company for errands, sightseeing, and social engagements (up to 8 hours).',
     icon: 'Sun',
-    discountPercent: 20,
-    discountedPrice: 11999,
-    tags: ['full-day', 'exclusive', 'premium']
+    tags: ['Daily', 'Comprehensive', 'Full Access'],
+    discountPercent: 20
   },
   {
-    id: 'travel-companion',
+    id: 'travel-comp',
     name: 'Travel Companion',
     category: 'Premium',
     basePrice: 17999,
-    perHourRate: 1499,
-    description: 'Travel together within Pakistan',
+    perHourRate: 3000,
+    description: 'Company for inter-city travel or weekend trips across Pakistan.',
     icon: 'Plane',
-    discountPercent: 20,
-    discountedPrice: 14399,
-    tags: ['travel', 'adventure', 'explore']
+    tags: ['Travel', 'Adventure', 'Long Distance'],
+    discountPercent: 20
   },
   {
     id: 'travel-guide',
     name: 'Travel Guide',
     category: 'Premium',
     basePrice: 8999,
-    perHourRate: 799,
-    description: 'Guided tours of cities and attractions',
-    icon: 'Map',
-    discountPercent: 20,
-    discountedPrice: 7199,
-    tags: ['tour', 'guide', 'sightseeing']
+    perHourRate: 1500,
+    description: 'An expert companion to show you the hidden gems and historic sites of your city.',
+    icon: 'Compass',
+    tags: ['Tourism', 'Local Expert', 'History'],
+    discountPercent: 20
   },
   {
     id: 'emotional-support',
     name: 'Emotional Support',
     category: 'Premium',
     basePrice: 5999,
-    perHourRate: 599,
-    description: 'Someone to talk to, listen, and support',
+    perHourRate: 2000,
+    description: 'A compassionate listener for when you need to talk, vent, or find comfort in company.',
     icon: 'Heart',
-    discountPercent: 20,
-    discountedPrice: 4799,
-    tags: ['support', 'care', 'listening']
+    tags: ['Empathy', 'Wellness', 'Private'],
+    discountPercent: 20
   },
 
-  // ========== EXCLUSIVE TIER ==========
+  // --- EXCLUSIVE TIER ---
   {
     id: 'romantic-night',
     name: 'Romantic Night',
     category: 'Exclusive',
     basePrice: 24999,
-    perHourRate: 1999,
-    description: 'An intimate, romantic evening',
+    perHourRate: 5000,
+    description: 'A premium, curated romantic experience for special occasions and deep connection.',
     icon: 'Moon',
-    discountPercent: 20,
-    discountedPrice: 19999,
-    tags: ['romantic', 'intimate', 'exclusive']
+    tags: ['Luxury', 'Exclusive', 'Romantic'],
+    discountPercent: 20
   },
   {
-    id: 'weekend-companion',
+    id: 'weekend-comp',
     name: 'Weekend Companion',
     category: 'Exclusive',
     basePrice: 34999,
-    perHourRate: 2499,
-    description: 'A full weekend getaway together',
-    icon: 'Palmtree',
-    discountPercent: 20,
-    discountedPrice: 27999,
-    tags: ['weekend', 'getaway', 'luxury']
+    perHourRate: 4000,
+    description: 'Dedicated company for an entire weekend of activities, relaxation, and bonding.',
+    icon: 'CalendarDays',
+    tags: ['Weekend', 'Premium', 'Immersion'],
+    discountPercent: 20
   },
   {
-    id: 'vacation-companion',
+    id: 'vacation-comp',
     name: 'Vacation Companion',
     category: 'Exclusive',
     basePrice: 29999,
-    perHourRate: 1999,
-    description: 'Multi-day vacation within Pakistan',
-    icon: 'Umbrella',
-    discountPercent: 20,
-    discountedPrice: 23999,
-    tags: ['vacation', 'holiday', 'luxury']
+    perHourRate: 4500,
+    description: 'The ultimate travel partner for vacations to northern areas or abroad.',
+    icon: 'Palmtree',
+    tags: ['Holiday', 'VIP', 'Global'],
+    discountPercent: 20
   }
 ];
 
 // ============================================
-// FIRST-TIME DISCOUNT CONFIGURATION
+// PROFILE OPTIONS
 // ============================================
 
-export const FIRST_TIME_DISCOUNT_CONFIG = {
-  enabled: true,
-  discountPercent: 20,
-  description: '20% OFF on your first booking!',
-  badgeText: 'First Time 20% OFF'
+export const INTEREST_OPTIONS = [
+  'Reading', 'Travel', 'Music', 'Fitness', 'Cooking',
+  'Gaming', 'Movies', 'Photography', 'Art', 'Tech',
+  'Dancing', 'Sports', 'Fashion', 'Nature', 'Business'
+];
+
+export const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Other'];
+
+export const AGE_RANGES = ['18-22', '23-27', '28-35', '35-45', '45+'];
+
+export const LANGUAGES = ['Urdu', 'English', 'Punjabi', 'Pashto', 'Sindhi', 'Saraiki', 'Balochi'];
+
+// ============================================
+// STATUS CONSTANTS (as strings for compatibility)
+// ============================================
+
+export const VERIFICATION_STATUS = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected'
 };
+
+export const BOOKING_STATUS = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled'
+};
+
+// ============================================
+// BOOKING OPTIONS
+// ============================================
+
+export const DURATIONS = [
+  { label: '1 Hour', value: 1 },
+  { label: '2 Hours', value: 2 },
+  { label: '3 Hours', value: 3 },
+  { label: '4 Hours', value: 4 },
+  { label: '6 Hours', value: 6 },
+  { label: '8 Hours (Full Day)', value: 8 },
+  { label: 'Weekend (48h)', value: 48 }
+];
+
+export const PAYMENT_METHODS = [
+  { id: 'easypaisa', name: 'EasyPaisa', icon: 'Wallet' },
+  { id: 'jazzcash', name: 'JazzCash', icon: 'Smartphone' },
+  { id: 'bank', name: 'Bank Transfer', icon: 'Building' }
+];
+
+// ============================================
+// SEED COMPANIONS
+// ============================================
+
+export const SEED_COMPANIONS: Companion[] = [
+  {
+    id: 'comp-1',
+    name: 'Aisha Malik',
+    age: 24,
+    gender: 'Female',
+    city: 'Lahore',
+    bio: 'Experienced social companion for dinner dates, cultural events, and professional networking. I enjoy meaningful conversations about art, tech, and literature.',
+    interests: ['Art', 'Tech', 'Music'],
+    photos: [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=60',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=60',
+      'https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=800&auto=format&fit=crop&q=60'
+    ],
+    services: [
+      { serviceId: 'dinner-date' },
+      { serviceId: 'pro-plus-one' },
+      { serviceId: 'event-comp' }
+    ],
+    rating: 4.9,
+    reviews: [
+      { id: 'rev-1', reviewerName: 'Usman K.', rating: 5, comment: 'Very professional and great conversation.', date: '2026-06-15' }
+    ],
+    status: 'Approved',
+    isVerified: true
+  },
+  {
+    id: 'comp-2',
+    name: 'Zainab Ahmed',
+    age: 22,
+    gender: 'Female',
+    city: 'Karachi',
+    bio: 'Vibrant and outgoing companion for shopping trips, cafe hangouts, and cinema outings. I love exploring Karachi\'s food scene!',
+    interests: ['Fashion', 'Movies', 'Nature'],
+    photos: [
+      'https://images.unsplash.com/photo-1503104834685-7205e8607eb9?w=800&auto=format&fit=crop&q=60',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=60',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=60'
+    ],
+    services: [
+      { serviceId: 'shopping-comp' },
+      { serviceId: 'movie-hangout' },
+      { serviceId: 'coffee-date' }
+    ],
+    rating: 4.7,
+    reviews: [
+      { id: 'rev-2', reviewerName: 'Farhan M.', rating: 4, comment: 'Had a fun time shopping!', date: '2026-06-20' }
+    ],
+    status: 'Approved',
+    isVerified: true
+  }
+];
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
 
-export function calculatePrice(serviceId: string, hours: number = 1, isFirstTime: boolean = false): number {
-  const service = SERVICES.find(s => s.id === serviceId);
+export const calculatePrice = (serviceId: string, hours: number = 1, isFirstTime: boolean = false): number => {
+  const service = getServiceById(serviceId);
   if (!service) return 0;
   
-  const total = service.basePrice + (service.perHourRate * (hours - 1));
+  const totalBase = service.basePrice + (service.perHourRate * (hours - 1 > 0 ? hours - 1 : 0));
   
-  // Apply 20% discount only for first-time users
-  if (isFirstTime && FIRST_TIME_DISCOUNT_CONFIG.enabled) {
-    return Math.round(total * 0.80); // 20% off
+  if (isFirstTime) {
+    return Math.round(totalBase * 0.8); // 20% first-time discount
   }
   
-  return Math.round(total); // Full price
-}
+  return totalBase;
+};
 
-export function getServiceById(serviceId: string) {
+export const getServiceById = (serviceId: string): ServiceItem | undefined => {
   return SERVICES.find(s => s.id === serviceId);
-}
+};
 
-export function getServicesByCategory(category: string) {
+export const getServicesByCategory = (category: string): ServiceItem[] => {
   return SERVICES.filter(s => s.category === category);
-}
+};
 
-export function getAllCategories(): string[] {
-  return [...new Set(SERVICES.map(s => s.category))];
-}
+export const getAllCategories = (): string[] => {
+  return Array.from(new Set(SERVICES.map(s => s.category)));
+};
 
-export function getDiscountedPrice(basePrice: number, isFirstTime: boolean = false): number {
-  if (isFirstTime && FIRST_TIME_DISCOUNT_CONFIG.enabled) {
-    return Math.round(basePrice * 0.80);
-  }
-  return basePrice;
-}
+export const getDiscountedPrice = (basePrice: number, isFirstTime: boolean): number => {
+  return isFirstTime ? Math.round(basePrice * 0.8) : basePrice;
+};
 
-export function getFirstTimeDiscountAmount(basePrice: number): number {
-  return Math.round(basePrice * 0.20);
-}
+export const getFirstTimeDiscountAmount = (basePrice: number): number => {
+  return Math.round(basePrice * 0.2);
+};
