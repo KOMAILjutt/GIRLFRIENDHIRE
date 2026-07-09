@@ -1,0 +1,6 @@
+{
+  "name": "Girlfriend Hire",
+  "description": "Pakistani Marketplace for girlfriend hire and companionship services. Book verified companions by the hour or full day, supporting local secure payments and real-time scheduling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
