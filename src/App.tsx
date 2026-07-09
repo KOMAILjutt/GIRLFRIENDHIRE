@@ -151,11 +151,11 @@ export default function App() {
         const user = session.user;
         
         // Check for Regional Admin Special Account
-        if (user.email?.toLowerCase() === 'admin@girlfriendhire.pk') {
+        if (user.email?.toLowerCase() === 'komailjutt008@gmail.com') {
           const adminProfile: UserProfile = {
             id: user.id,
             name: 'Regional Admin',
-            email: 'admin@girlfriendhire.pk',
+            email: 'komailjutt008@gmail.com',
             role: 'Admin',
             profilePhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
           };
