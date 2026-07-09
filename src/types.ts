@@ -51,6 +51,12 @@ export interface Booking {
   timeSlot: 'Morning 9-12' | 'Afternoon 12-3' | 'Evening 3-6' | 'Night 6-9';
   status: 'Pending' | 'Confirmed' | 'Completed';
   createdAt: string;
+  paymentDetails?: {
+    transactionId: string;
+    senderName: string;
+    method: string;
+    account: string;
+  };
 }
 
 export interface UserProfile {

@@ -619,7 +619,8 @@ export default function App() {
       bookingDate: bookingData.bookingDate,
       timeSlot: bookingData.timeSlot,
       status: 'Pending', // Pending admin verify
-      createdAt: new Date().toLocaleDateString()
+      createdAt: new Date().toLocaleDateString(),
+      paymentDetails: bookingData.paymentDetails
     };
 
     const row = {
