@@ -8,6 +8,7 @@ interface AdminPanelProps {
   onApproveReject: (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => void;
   onDeleteCompanion: (id: string) => void;
   onAddCompanion: (newComp: Companion) => void;
+  onEditCompanion: (comp: Companion) => void;
   supportMessages: SupportMessage[];
   onSendAdminReply: (text: string) => void;
   bookings: Booking[];
@@ -21,6 +22,7 @@ export default function AdminPanel({
   onApproveReject,
   onDeleteCompanion,
   onAddCompanion,
+  onEditCompanion,
   supportMessages,
   onSendAdminReply,
   bookings,
@@ -304,6 +306,12 @@ export default function AdminPanel({
                       disabled={comp.status === 'Rejected'}
                     >
                       <XCircle className="w-3.5 h-3.5" /> Reject
+                    </button>
+                    <button
+                      onClick={() => onEditCompanion(comp)}
+                      className="bg-indigo-950 text-indigo-400 border border-indigo-800/60 hover:bg-indigo-900/60 font-semibold text-[10px] px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit
                     </button>
                   </div>
 

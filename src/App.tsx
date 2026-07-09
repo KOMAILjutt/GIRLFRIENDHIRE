@@ -486,6 +486,20 @@ export default function App() {
     }
   };
 
+  const handleEditCompanion = async (companion: Companion) => {
+    const newBio = prompt('Enter new bio:', companion.bio);
+    if (newBio === null) return;
+    
+    const { error } = await supabase
+      .from('companions')
+      .update({ bio: newBio })
+      .eq('id', companion.id);
+      
+    if (!error) {
+      setCompanions(prev => prev.map(c => c.id === companion.id ? { ...c, bio: newBio } : c));
+    }
+  };
+
   const handleApproveBooking = async (bookingId: string) => {
     const { error } = await supabase
       .from('bookings')
@@ -821,6 +835,7 @@ export default function App() {
               onApproveReject={handleApproveRejectCompanion}
               onDeleteCompanion={handleDeleteCompanion}
               onAddCompanion={handleAddCompanionByAdmin}
+              onEditCompanion={handleEditCompanion}
               supportMessages={supportMessages}
               onSendAdminReply={(text) => handleSendMessage(text, 'admin')}
               bookings={bookings}
