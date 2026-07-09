@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ShieldCheck, Plus, Trash2, Edit3, CheckCircle, XCircle, Users, BarChart3, Landmark, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import { Companion, ServiceItem, SupportMessage, Booking } from '../types';
 import { CITIES, SERVICES } from '../data';
+import { supabase } from '../supabaseClient';
+import { uploadToSupabaseStorage } from '../lib/storage';
 
 interface AdminPanelProps {
   companions: Companion[];
@@ -96,9 +98,27 @@ export default function AdminPanel({
     reader.readAsDataURL(file);
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newBio.trim()) return;
+
+    // Upload new photos to Supabase Storage
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        alert("You must be logged in as an admin to add a companion.");
+        return;
+    }
+
+    const uploadedPaths = await Promise.all(newPhotos.map(async (photo, idx) => {
+        if (photo.startsWith('data:')) {
+            // Convert base64 to Blob
+            const response = await fetch(photo);
+            const blob = await response.blob();
+            const extension = 'jpg';
+            return await uploadToSupabaseStorage(user.id, 'companion', `admin_add_${Date.now()}_${idx}`, blob, extension);
+        }
+        return photo; // Already a URL or path
+    }));
 
     const companionServicesObj = selectedServices.map(sid => ({
       serviceId: sid
@@ -112,7 +132,7 @@ export default function AdminPanel({
       city: newCity,
       bio: newBio,
       interests: ['Conversation', 'Dining', 'Events'],
-      photos: newPhotos,
+      photos: uploadedPaths,
       services: companionServicesObj,
       rating: 5.0,
       reviews: [],
@@ -127,6 +147,11 @@ export default function AdminPanel({
     setNewAge(23);
     setNewBio('');
     setSelectedServices(['srv_1', 'srv_3']);
+    setNewPhotos([
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200'
+    ]);
     setActiveTab('companions');
   };
 
