@@ -2,9 +2,9 @@ import { ServiceItem, Companion } from './types';
 
 export const SERVICES: ServiceItem[] = [
   // Basic
-  { id: 'srv_1', name: 'Coffee/Meal Date', category: 'Basic', basePrice: 2000, perHourRate: 300 },
+  { id: 'srv_1', name: 'Coffee/Meal Date', category: 'Basic', basePrice: 500, perHourRate: 100 },
   { id: 'srv_2', name: 'Shopping Companion', category: 'Basic', basePrice: 2500, perHourRate: 350 },
-  { id: 'srv_3', name: 'Movie/Café Hangout', category: 'Basic', basePrice: 2000, perHourRate: 300 },
+  { id: 'srv_3', name: 'Movie/Café Hangout', category: 'Basic', basePrice: 500, perHourRate: 100 },
   { id: 'srv_4', name: 'Virtual Companion', category: 'Basic', basePrice: 1000, perHourRate: 200 },
   { id: 'srv_5', name: 'Language Practice', category: 'Basic', basePrice: 800, perHourRate: 150 },
   
