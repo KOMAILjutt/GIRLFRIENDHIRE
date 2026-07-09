@@ -9,6 +9,7 @@ interface AdminPanelProps {
   companions: Companion[];
   onApproveReject: (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => void;
   onDeleteCompanion: (id: string) => void;
+  onRemoveAllCompanions: () => void;
   onAddCompanion: (newComp: Companion) => void;
   onEditCompanion: (comp: Companion) => void;
   supportMessages: SupportMessage[];
@@ -23,6 +24,7 @@ export default function AdminPanel({
   companions,
   onApproveReject,
   onDeleteCompanion,
+  onRemoveAllCompanions,
   onAddCompanion,
   onEditCompanion,
   supportMessages,
@@ -251,7 +253,15 @@ export default function AdminPanel({
       {/* 1. MANAGE REGISTRATIONS TAB */}
       {activeTab === 'companions' && (
         <div className="space-y-3">
-          <h3 className="font-semibold text-xs text-slate-200 px-1 font-display uppercase tracking-wider">Verification Registrations Directory</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-xs text-slate-200 px-1 font-display uppercase tracking-wider">Verification Registrations Directory</h3>
+            <button
+                onClick={onRemoveAllCompanions}
+                className="text-[9px] bg-rose-950/40 text-rose-400 border border-rose-900/50 px-2 py-1 rounded hover:bg-rose-900/60"
+            >
+                Remove All Companions
+            </button>
+          </div>
           
           <div className="space-y-3">
             {companions.map((comp) => (

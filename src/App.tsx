@@ -337,7 +337,7 @@ export default function App() {
         interests: companionObj.interests,
         photos: companionObj.photos,
         services: companionObj.services,
-        is_approved_companion: false
+        is_approved_companion: companionObj.isVerified // Use the verified status
       })
       .eq('id', currentUser.id);
 
@@ -450,13 +450,36 @@ export default function App() {
   };
 
   const handleDeleteCompanion = async (id: string) => {
+    // 1. Find companion to see if it has a user_id
+    const comp = companions.find(c => c.id === id);
+    
+    // 2. Delete from companions table
     const { error } = await supabase
       .from('companions')
       .delete()
       .eq('id', id);
 
     if (!error) {
+      // 3. If it had a user_id, update their profile
+      // Note: We don't have user_id in Companion interface, assuming it might be in raw data or not easily available here. 
+      // For now, focus on companions table as requested.
       setCompanions(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
+  const handleRemoveAllCompanions = async () => {
+    if (!confirm('Are you sure you want to remove ALL companions? This cannot be undone.')) return;
+
+    const { error } = await supabase
+      .from('companions')
+      .delete()
+      .neq('id', 'non-existent-id'); // Trick to delete all
+
+    if (!error) {
+        setCompanions([]);
+        alert('All companions removed.');
+    } else {
+        alert('Error removing companions: ' + error.message);
     }
   };
 
@@ -834,6 +857,7 @@ export default function App() {
               companions={companions}
               onApproveReject={handleApproveRejectCompanion}
               onDeleteCompanion={handleDeleteCompanion}
+              onRemoveAllCompanions={handleRemoveAllCompanions}
               onAddCompanion={handleAddCompanionByAdmin}
               onEditCompanion={handleEditCompanion}
               supportMessages={supportMessages}

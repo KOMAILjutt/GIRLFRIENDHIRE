@@ -486,7 +486,7 @@ export default function AuthScreens({
       bio,
       interests: selectedInterests,
       photos: rawCompanionPhotos.length > 0 ? rawCompanionPhotos : companionPhotos,
-      services: selectedServices,
+      services: selectedServices.map(sid => ({ serviceId: sid })),
       rating: 5.0,
       reviews: [],
       status: 'Approved' as const,
@@ -519,6 +519,12 @@ export default function AuthScreens({
     }
 
     // Insert into companions table
+    console.log('Attempting to insert into companions:', {
+      id: companionObj.id,
+      user_id: userId,
+      name: companionObj.name,
+      status: companionObj.status
+    });
     const { error: companionError } = await supabase
       .from('companions')
       .insert({
@@ -539,9 +545,11 @@ export default function AuthScreens({
       });
 
     if (companionError) {
-      setErrorMsg(companionError.message);
+      console.error('Companion insert error details:', companionError);
+      setErrorMsg(`Failed to register companion: ${companionError.message}`);
       return;
     }
+    console.log('Companion insert success!');
 
     onRegisterCompanionSubmit(companionObj);
     setCompanionSubmitted(true);
