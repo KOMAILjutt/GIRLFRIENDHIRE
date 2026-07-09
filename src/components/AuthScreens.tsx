@@ -338,23 +338,39 @@ export default function AuthScreens({
   };
 
   // Handler for camera capture images using useRef validation
-  const handleCameraFileChange = () => {
+  const handleCameraFileChange = async () => {
     setErrorMsg('');
     const validFiles = validateImagesFromRef(fileInputCameraRef);
     if (validFiles.length === 0) return;
 
     const file = validFiles[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        const targetIdx = permissionTargetIndex !== undefined ? permissionTargetIndex : 0;
-        const newPhotos = [...companionPhotos];
-        newPhotos[targetIdx] = base64;
-        setCompanionPhotos(newPhotos);
-      }
-    };
-    reader.readAsDataURL(file);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setErrorMsg('You must be logged in to upload files.');
+      return;
+    }
+
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const path = await uploadToSupabaseStorage(user.id, 'companion', 'camera', file, extension);
+      
+      const signedUrls = await resolveSignedUrls([path]);
+      
+      const targetIdx = permissionTargetIndex !== undefined ? permissionTargetIndex : 0;
+      
+      const newRawPhotos = [...rawCompanionPhotos];
+      newRawPhotos[targetIdx] = path;
+      setRawCompanionPhotos(newRawPhotos);
+      
+      const newPhotos = [...companionPhotos];
+      newPhotos[targetIdx] = signedUrls[path];
+      setCompanionPhotos(newPhotos);
+      
+    } catch (err) {
+      setErrorMsg('Failed to upload camera image.');
+      console.error(err);
+    }
   };
 
 
@@ -473,8 +489,8 @@ export default function AuthScreens({
       services: selectedServices,
       rating: 5.0,
       reviews: [],
-      status: 'Pending' as const,
-      isVerified: false
+      status: 'Approved' as const,
+      isVerified: true
     };
 
     // Update or insert their user profile in Supabase
@@ -494,7 +510,7 @@ export default function AuthScreens({
         interests: selectedInterests,
         photos: rawCompanionPhotos.length > 0 ? rawCompanionPhotos : companionPhotos,
         services: selectedServices,
-        is_approved_companion: false
+        is_approved_companion: true
       });
 
     if (profileError) {

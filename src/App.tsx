@@ -805,7 +805,7 @@ export default function App() {
                   onClick={() => setCurrentUser({ ...currentUser, role: 'Admin' })}
                   className="text-[#E9D5FF] hover:text-white font-bold uppercase tracking-wider bg-[#6A0DAD]/35 px-2 py-0.5 rounded border border-[#6A0DAD]/60 shadow-[0_0_10px_rgba(106,13,173,0.25)] cursor-pointer transition-all"
                 >
-                  [Demo Admin Panel]
+                  [ADMIN PANEL]
                 </button>
               )}
             </div>
