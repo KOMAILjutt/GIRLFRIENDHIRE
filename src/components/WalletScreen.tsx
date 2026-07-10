@@ -23,13 +23,16 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleCopyTill = () => {
-    navigator.clipboard.writeText('489312');
+  const REAL_EASYPAISA_NUMBER = '03173223559';
+  const REAL_ACCOUNT_NAME = 'Noman Khan';
+
+  const handleCopyNumber = () => {
+    navigator.clipboard.writeText(REAL_EASYPAISA_NUMBER);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmitTopUp = (e: React.FormEvent) => {
+  const handleSubmitPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -45,7 +48,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
     }
 
     onTopUp(amount, trxId.trim());
-    setSuccessMsg(`Payment request submitted! Admin will verify your payment within 30 minutes.`);
+    setSuccessMsg(`Payment submitted! Admin will verify within 30 minutes. Once verified, you can book companions.`);
     setTopUpAmount('');
     setTrxId('');
 
@@ -54,7 +57,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
 
   return (
     <div id="wallet-screen-container" className="p-4 space-y-6 pb-24 animate-fade-in">
-      {/* Payment Info Card - FAKE BALANCE REMOVED */}
+      {/* Payment Info Card */}
       <div className="bg-gradient-to-br from-[#1a0b2e] via-[#6A0DAD]/40 to-[#0f071a] text-white rounded-2xl p-6 shadow-xl border border-[#6A0DAD]/35 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-32 h-32 bg-[#6A0DAD]/10 rounded-full blur-2xl" />
         <div className="flex items-center gap-2">
@@ -63,43 +66,44 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
         </div>
         <div className="mt-4">
           <p className="text-sm text-[#E9D5FF]">
-            Pay after booking via EasyPaisa. Admin will verify your payment.
+            Add balance first, then book companions instantly.
           </p>
         </div>
         <p className="text-xs text-[#E9D5FF]/75 mt-2">
-          Send payment to our EasyPaisa account after you book a companion.
+          Your balance will show here after admin verification.
         </p>
       </div>
 
-      {/* Top Up Instructions */}
+      {/* Payment Instructions */}
       <div className="bg-[#1a0b2e] border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
         <div className="flex items-center gap-2 border-b border-white/5 pb-2">
           <Landmark className="w-4.5 h-4.5 text-[#E9D5FF]" />
-          <h3 className="font-semibold text-sm text-slate-100 font-display">How to Pay via EasyPaisa</h3>
+          <h3 className="font-semibold text-sm text-slate-100 font-display">How to Add Balance</h3>
         </div>
         
         <ol className="text-xs text-slate-400 space-y-2.5 list-decimal list-inside">
           <li>Open your <strong>EasyPaisa App</strong>.</li>
-          <li>Choose <strong>Send Money</strong> &gt; <strong>To Merchant (Till Payment)</strong>.</li>
+          <li>Choose <strong>Send Money</strong> &gt; <strong>Send to Mobile Account</strong>.</li>
           <li>
-            Enter Till ID:{' '}
+            Send to:{' '}
             <button 
-              onClick={handleCopyTill}
+              onClick={handleCopyNumber}
               type="button"
               className="inline-flex items-center gap-1 bg-[#0f071a] text-[#D4AF37] px-2.5 py-1 rounded-lg font-mono font-semibold text-xs border border-[#6A0DAD]/40 hover:bg-[#6A0DAD]/20 transition-colors cursor-pointer"
             >
-              489312
+              {REAL_EASYPAISA_NUMBER} ({REAL_ACCOUNT_NAME})
               {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-[#D4AF37]/70" />}
             </button>
           </li>
-          <li>Transfer the booking amount and note down the <strong>TRX ID</strong>.</li>
+          <li>Enter the amount you want to add.</li>
+          <li>Note down the <strong>TRX ID</strong> after sending.</li>
           <li>Submit the form below for admin verification.</li>
         </ol>
 
         {/* Submit Form */}
-        <form onSubmit={handleSubmitTopUp} className="space-y-3 pt-2">
+        <form onSubmit={handleSubmitPayment} className="space-y-3 pt-2">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1 uppercase tracking-wider">Amount Paid (PKR)</label>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1 uppercase tracking-wider">Amount Sent (PKR)</label>
             <input
               type="number"
               value={topUpAmount}
@@ -116,7 +120,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
               type="text"
               value={trxId}
               onChange={(e) => setTrxId(e.target.value)}
-              placeholder="e.g. 35849102431"
+              placeholder="e.g. T1234567890"
               required
               className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD] font-mono"
             />
@@ -139,7 +143,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
         <h3 className="font-semibold text-sm text-slate-100 px-1 font-display">Payment History</h3>
         {transactions.length === 0 ? (
           <div className="bg-[#1a0b2e]/40 border border-white/5 rounded-xl p-6 text-center text-xs text-slate-500">
-            No payments found yet.
+            No payments found yet. Add balance to book companions.
           </div>
         ) : (
           <div className="space-y-2">
