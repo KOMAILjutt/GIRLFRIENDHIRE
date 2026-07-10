@@ -410,7 +410,7 @@ export default function AuthScreens({
         gender: clientProfile.gender,
         age: clientProfile.age,
         profile_photo: clientProfile.rawProfilePhoto || clientProfile.profilePhoto, // Use raw if available
-        wallet_balance: 0
+        wallet_balance: 15000.00 // initial balance
       });
 
     if (error) {
@@ -452,10 +452,7 @@ export default function AuthScreens({
     e.preventDefault();
     setErrorMsg('');
 
-    if (companionPhotos.length < 3) {
-      setErrorMsg('You must upload at least 3 photos (front face, full body, casual).');
-      return;
-    }
+    // Photos: 1+ required, empty slots stay blank
 
     if (!bio.trim() || bio.split(/\s+/).length > 200) {
       setErrorMsg('Bio is required and must not exceed 200 words.');
@@ -1080,7 +1077,7 @@ export default function AuthScreens({
                 {/* Step 3: Photos - MUST UPLOAD 3 */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Upload 3 mandatory Photos (Front, Full-Body, Casual)
+                    Upload Photos (At least 1 required)
                   </label>
                   
                   <div className="grid grid-cols-3 gap-2 bg-[#1a0b2e] border border-white/10 p-2.5 rounded-xl shadow-md">
