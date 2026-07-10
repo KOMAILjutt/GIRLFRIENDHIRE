@@ -1,20 +1,16 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Filter, ShieldCheck, X, Copy, Check, Upload } from 'lucide-react';
+import { Search, MapPin, Star, Filter, ShieldCheck, X } from 'lucide-react';
 import { Companion } from '../types';
 import { CITIES, SERVICES } from '../data';
+import BookingModal from './BookingModal';
 
 interface BrowsePageProps {
   companions: Companion[];
   onSelectCompanion: (companion: Companion) => void;
+  onBookCompanion?: (bookingData: any) => void;
 }
 
-// Payment accounts
-const PAYMENT_ACCOUNTS = [
-  { number: '03173223559', name: 'Noman Khan' },
-  { number: '03465119715', name: 'Majid Amin' }
-];
-
-export default function BrowsePage({ companions, onSelectCompanion }: BrowsePageProps) {
+export default function BrowsePage({ companions, onSelectCompanion, onBookCompanion }: BrowsePageProps) {
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('All');
@@ -22,16 +18,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
   // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
-  const [selectedService, setSelectedService] = useState<string>('');
-  const [bookingHours, setBookingHours] = useState<number>(3);
-  const [paymentAccount, setPaymentAccount] = useState<{number: string, name: string} | null>(null);
-
-  // Payment verification state
-  const [trxLast4, setTrxLast4] = useState('');
-  const [senderName, setSenderName] = useState('');
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [paymentStep, setPaymentStep] = useState<'select' | 'pay' | 'verify'>('select');
-  const [copied, setCopied] = useState(false);
 
   const handleClear = () => {
     setSelectedCity('All');
@@ -60,79 +46,25 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     }).filter(Boolean) as string[];
   };
 
-  const getServicePrice = (serviceId: string, hours: number = 1) => {
-    const service = SERVICES.find(s => s.id === serviceId);
-    if (!service) return 0;
-    return service.basePrice + (service.perHourRate * (hours - 1));
-  };
-
-  const getCompanionServices = (comp: Companion) => {
-    return comp.services.map((cs) => {
-      const original = SERVICES.find((s) => s.id === cs.serviceId);
-      if (!original) return null;
-      return {
-        serviceId: cs.serviceId,
-        name: original.name,
-        basePrice: cs.customBasePrice || original.basePrice,
-        perHourRate: original.perHourRate
-      };
-    }).filter(Boolean) as { serviceId: string; name: string; basePrice: number; perHourRate: number }[];
-  };
-
   const handleBookNow = (comp: Companion) => {
-    const compServices = getCompanionServices(comp);
     setSelectedCompanion(comp);
-    setSelectedService(compServices[0]?.serviceId || '');
-    setBookingHours(3);
-    setPaymentStep('select');
-    setTrxLast4('');
-    setSenderName('');
-    setScreenshot(null);
     setShowBookingModal(true);
   };
 
-  const handleProceedToPayment = () => {
-    const randomIndex = Math.floor(Math.random() * PAYMENT_ACCOUNTS.length);
-    setPaymentAccount(PAYMENT_ACCOUNTS[randomIndex]);
-    setPaymentStep('pay');
+  const handleCloseBooking = () => {
+    setShowBookingModal(false);
+    setSelectedCompanion(null);
   };
 
-  const handleCopyNumber = () => {
-    if (paymentAccount) {
-      navigator.clipboard.writeText(paymentAccount.number);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleConfirmBooking = (bookingData: any) => {
+    console.log('Booking confirmed:', bookingData);
+    if (onBookCompanion) {
+      onBookCompanion(bookingData);
     }
-  };
-
-  const handleSubmitPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (trxLast4.length !== 4) {
-      alert('Please enter last 4 digits of TRX ID');
-      return;
-    }
-    if (!senderName.trim()) {
-      alert('Please enter sender name');
-      return;
-    }
-
-    console.log('Booking submitted:', {
-      companion: selectedCompanion?.id,
-      service: selectedService,
-      hours: bookingHours,
-      amount: getServicePrice(selectedService, bookingHours),
-      paymentTo: paymentAccount,
-      trxLast4,
-      senderName,
-      screenshot: screenshot?.name
-    });
-
-    setPaymentStep('verify');
-    setTimeout(() => {
-      setShowBookingModal(false);
-      alert('Booking request submitted! Admin will verify your payment.');
-    }, 2000);
+    // Show success alert
+    alert('Booking request submitted! Admin will verify your payment within 30 minutes.');
+    setShowBookingModal(false);
+    setSelectedCompanion(null);
   };
 
   const filteredCompanions = companions.filter((comp) => {
@@ -331,158 +263,11 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
 
       {/* BOOKING MODAL */}
       {showBookingModal && selectedCompanion && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a0b2e] border border-[#6A0DAD]/50 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
-
-            {/* Modal Header */}
-            <div className="p-4 border-b border-white/10 flex justify-between items-center">
-              <h2 className="text-sm font-bold text-white font-display">Book {selectedCompanion.name}</h2>
-              <button 
-                onClick={() => setShowBookingModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* STEP 1: Select Service & Hours */}
-            {paymentStep === 'select' && (
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Select Service</label>
-                  <select
-                    value={selectedService}
-                    onChange={(e) => setSelectedService(e.target.value)}
-                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-                  >
-                    {getCompanionServices(selectedCompanion).map((svc) => (
-                      <option key={svc.serviceId} value={svc.serviceId}>
-                        {svc.name} - ₨ {svc.basePrice.toLocaleString()}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Hours (Minimum 3)</label>
-                  <select
-                    value={bookingHours}
-                    onChange={(e) => setBookingHours(Number(e.target.value))}
-                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-                  >
-                    {[3,4,5,6,8,10,12].map(h => (
-                      <option key={h} value={h}>{h} Hours</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-[#6A0DAD]/10 border border-[#6A0DAD]/30 rounded-xl p-3">
-                  <p className="text-xs text-slate-400">Total Amount</p>
-                  <p className="text-xl font-bold text-white">₨ {getServicePrice(selectedService, bookingHours).toLocaleString()}</p>
-                  <p className="text-[10px] text-emerald-400">50% OFF applied!</p>
-                </div>
-
-                <button
-                  onClick={handleProceedToPayment}
-                  className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
-                >
-                  Proceed to Payment
-                </button>
-              </div>
-            )}
-
-            {/* STEP 2: Payment Instructions */}
-            {paymentStep === 'pay' && paymentAccount && (
-              <div className="p-4 space-y-4">
-                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 text-center">
-                  <p className="text-xs text-emerald-400 mb-1">Send payment to this EasyPaisa number:</p>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <p className="text-lg font-bold text-white font-mono">{paymentAccount.number}</p>
-                    <button 
-                      onClick={handleCopyNumber}
-                      className="text-[#D4AF37] hover:text-white"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">Account: {paymentAccount.name}</p>
-                </div>
-
-                <div className="text-xs text-slate-400 space-y-1">
-                  <p>1. Open EasyPaisa app</p>
-                  <p>2. Send <strong>₨ {getServicePrice(selectedService, bookingHours).toLocaleString()}</strong></p>
-                  <p>3. Enter number: <strong>{paymentAccount.number}</strong></p>
-                  <p>4. Note down the TRX ID</p>
-                </div>
-
-                <button
-                  onClick={() => setPaymentStep('verify')}
-                  className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
-                >
-                  I Have Paid - Enter Details
-                </button>
-              </div>
-            )}
-
-            {/* STEP 3: Verify Payment */}
-            {paymentStep === 'verify' && paymentAccount && (
-              <form onSubmit={handleSubmitPayment} className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Last 4 Digits of TRX ID</label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={trxLast4}
-                    onChange={(e) => setTrxLast4(e.target.value.replace(/\D/g, ''))}
-                    placeholder="e.g. 7845"
-                    required
-                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 text-center font-mono tracking-widest"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sender Name (Your Name)</label>
-                  <input
-                    type="text"
-                    value={senderName}
-                    onChange={(e) => setSenderName(e.target.value)}
-                    placeholder="Enter your full name"
-                    required
-                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Screenshot (Optional)</label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                      className="hidden"
-                      id="screenshot-upload"
-                    />
-                    <label 
-                      htmlFor="screenshot-upload"
-                      className="flex items-center justify-center gap-2 w-full bg-[#0f071a] border border-dashed border-[#6A0DAD]/50 rounded-xl px-3 py-3 text-xs text-slate-400 cursor-pointer hover:border-[#6A0DAD]"
-                    >
-                      <Upload className="w-4 h-4" />
-                      {screenshot ? screenshot.name : 'Click to upload screenshot'}
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl py-3 text-xs transition-colors"
-                >
-                  Submit Booking Request
-                </button>
-              </form>
-            )}
-
-          </div>
-        </div>
+        <BookingModal
+          companion={selectedCompanion}
+          onClose={handleCloseBooking}
+          onConfirmBooking={handleConfirmBooking}
+        />
       )}
     </div>
   );
