@@ -1,51 +1,22 @@
 import React, { useState } from 'react';
-import BookingModal from './BookingModal';
 import { Search, MapPin, Star, Filter, ShieldCheck, X } from 'lucide-react';
-import { Companion, ServiceItem } from '../types';
+import { Companion } from '../types';
 import { CITIES, SERVICES } from '../data';
 
 interface BrowsePageProps {
   companions: Companion[];
   onSelectCompanion: (companion: Companion) => void;
-  onBookCompanion?: (bookingData: any) => void;
-  walletBalance?: number;
-  hasPreviousBookings?: boolean;
 }
 
-export default function BrowsePage({ companions, onSelectCompanion, onBookCompanion, walletBalance = 0, hasPreviousBookings = false }: BrowsePageProps) {
+export default function BrowsePage({ companions, onSelectCompanion }: BrowsePageProps) {
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('All');
-  
-  // Booking modal state
-  const [bookingCompanion, setBookingCompanion] = useState<Companion | null>(null);
-  const [bookingService, setBookingService] = useState<ServiceItem | null>(null);
 
   const handleClear = () => {
     setSelectedCity('All');
     setSearchQuery('');
     setSelectedGender('All');
-  };
-
-  // Get full service details for a companion
-  const getCompanionServices = (comp: Companion): ServiceItem[] => {
-    return comp.services.map((cs) => {
-      const original = SERVICES.find((s) => s.id === cs.serviceId);
-      if (!original) return null;
-      return {
-        ...original,
-        basePrice: cs.customBasePrice || original.basePrice,
-        perHourRate: cs.customPerHourRate || original.perHourRate
-      };
-    }).filter(Boolean) as ServiceItem[];
-  };
-
-  // Get service names as tags for card display
-  const getServiceTags = (comp: Companion) => {
-    return comp.services.map((cs) => {
-      const original = SERVICES.find((s) => s.id === cs.serviceId);
-      return original ? original.name : null;
-    }).filter(Boolean) as string[];
   };
 
   // Extract starting from price for a companion
@@ -63,25 +34,42 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
     return minPrice === Infinity ? 2000 : minPrice;
   };
 
+  // Get service names as tags for card display
+  const getServiceTags = (comp: Companion) => {
+    return comp.services.map((cs) => {
+      const original = SERVICES.find((s) => s.id === cs.serviceId);
+      return original ? original.name : null;
+    }).filter(Boolean) as string[];
+  };
+
   // Filter companions
   const filteredCompanions = companions.filter((comp) => {
+    // Only display approved ones in browse
     if (comp.status !== 'Approved') return false;
+
+    // Filter by city dropdown
     if (selectedCity !== 'All' && comp.city.toLowerCase() !== selectedCity.toLowerCase()) {
       return false;
     }
+
+    // Filter by manual search input (city, name, interests, bio)
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
       const matchName = comp.name.toLowerCase().includes(query);
       const matchCity = comp.city.toLowerCase().includes(query);
       const matchBio = comp.bio.toLowerCase().includes(query);
       const matchInterests = comp.interests.some(i => i.toLowerCase().includes(query));
+      
       if (!matchName && !matchCity && !matchBio && !matchInterests) {
         return false;
       }
     }
+
+    // Filter by gender
     if (selectedGender !== 'All' && comp.gender !== selectedGender) {
       return false;
     }
+
     return true;
   });
 
@@ -103,6 +91,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
         </div>
 
         <div className="grid grid-cols-1 gap-2.5">
+          {/* Text input search */}
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
             <input
@@ -115,6 +104,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
           </div>
 
           <div className="grid grid-cols-2 gap-2">
+            {/* Grouped City dropdown */}
             <div>
               <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">City Filter</label>
               <select
@@ -141,6 +131,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
               </select>
             </div>
 
+            {/* Gender filter */}
             <div>
               <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">Gender</label>
               <select
@@ -157,6 +148,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex justify-between items-center pt-1 text-[11px]">
           <span className="text-slate-400 font-medium">
             Found <strong className="text-[#E9D5FF]">{filteredCompanions.length}</strong> available results
@@ -195,6 +187,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                 key={comp.id}
                 className="bg-[#1a0b2e] border border-white/10 rounded-2xl overflow-hidden flex flex-col hover:border-[#6A0DAD]/50 hover:shadow-[0_0_15px_rgba(106,13,173,0.25)] transition-all duration-300 group shadow-md"
               >
+                {/* Photo Header */}
                 <div className="relative aspect-4/5 bg-[#0f071a] overflow-hidden">
                   <img
                     src={comp.photos[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'}
@@ -202,10 +195,14 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     referrerPolicy="no-referrer"
                   />
+
+                  {/* Rating Badge Overlay */}
                   <div className="absolute top-2 left-2 bg-[#0f071a]/85 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-white/5 text-[10px] text-slate-200 font-bold">
                     <Star className="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]" />
                     <span>{comp.rating.toFixed(1)}</span>
                   </div>
+
+                  {/* Verification Overlay Badge */}
                   {comp.isVerified && (
                     <div className="absolute top-2 right-2 bg-[#6A0DAD]/90 border border-[#6A0DAD]/50 text-white p-1 rounded-full flex items-center justify-center shadow-md shadow-[#0f071a]/30" title="Admin Verified">
                       <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
@@ -213,6 +210,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                   )}
                 </div>
 
+                {/* Body Details */}
                 <div className="p-3 flex-1 flex flex-col justify-between space-y-2.5">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start gap-1">
@@ -220,10 +218,13 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                         {comp.name}, {comp.age}
                       </h4>
                     </div>
+
                     <div className="flex items-center gap-1 text-[10px] text-slate-400">
                       <MapPin className="w-3 h-3 text-[#E9D5FF]/85 shrink-0" />
                       <span className="line-clamp-1">{comp.city}</span>
                     </div>
+
+                    {/* Service tag clips (max 2 for spacing) */}
                     <div className="flex flex-wrap gap-1 pt-1 overflow-hidden h-[18px]">
                       {serviceTags.slice(0, 2).map((st, i) => (
                         <span
@@ -236,6 +237,7 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                     </div>
                   </div>
 
+                  {/* Price Tag & button */}
                   <div className="border-t border-white/5 pt-2 flex flex-col gap-1.5 mt-auto">
                     <div className="text-[10px] text-slate-400">
                       Starts from{' '}
@@ -243,60 +245,18 @@ export default function BrowsePage({ companions, onSelectCompanion, onBookCompan
                         ₨ {startPrice.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => onSelectCompanion(comp)}
-                        className="flex-1 bg-[#0f071a] hover:bg-[#6A0DAD]/20 border border-[#6A0DAD]/35 text-[#E9D5FF] font-semibold rounded-xl py-1.5 text-[10px] transition-colors cursor-pointer"
-                      >
-                        View Profile
-                      </button>
-                      <button
-                        onClick={() => {
-                          const services = getCompanionServices(comp);
-                          if (services.length > 0) {
-                            setBookingCompanion(comp);
-                            setBookingService(services[0]);
-                          }
-                        }}
-                        className="flex-1 bg-[#6A0DAD] hover:brightness-110 text-white font-semibold rounded-xl py-1.5 text-[10px] transition-colors shadow-md cursor-pointer"
-                      >
-                        Book Now
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => onSelectCompanion(comp)}
+                      className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-semibold rounded-xl py-1.5 text-[10px] transition-colors shadow-md cursor-pointer"
+                    >
+                      View Profile
+                    </button>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-      )}
-
-      {/* Booking Modal */}
-      {bookingCompanion && bookingService && onBookCompanion && (
-        <BookingModal
-          companion={bookingCompanion}
-          service={bookingService}
-          walletBalance={walletBalance}
-          hasPreviousBookings={hasPreviousBookings}
-          onClose={() => {
-            setBookingCompanion(null);
-            setBookingService(null);
-          }}
-          onConfirmBooking={(data) => {
-            onBookCompanion({
-              ...data,
-              companionId: bookingCompanion.id,
-              companionName: bookingCompanion.name,
-              companionPhoto: bookingCompanion.photos[0] || ''
-            });
-            setBookingCompanion(null);
-            setBookingService(null);
-          }}
-          onNavigateToWallet={() => {
-            setBookingCompanion(null);
-            setBookingService(null);
-          }}
-        />
       )}
     </div>
   );

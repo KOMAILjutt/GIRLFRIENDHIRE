@@ -72,26 +72,46 @@ export default function AuthScreens({
     setPassword('');
   };
 
-  // Real Supabase Google Authentication - Fixed for production
+  // Real Supabase Google Authentication
   const handleGoogleAuth = async () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
+      // Use standard Supabase signInWithOAuth.
+      // To ensure it works inside the preview iframe, we first try to get the URL with skipBrowserRedirect
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback',
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        // If skipBrowserRedirect fails or isn't supported, fall back to standard redirection
+        const { error: redirectError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (redirectError) {
+          setErrorMsg(redirectError.message);
+        }
         return;
       }
 
-      // If we got a URL, redirect the whole page (not popup)
       if (data?.url) {
-        window.location.href = data.url;
+        // Open the Google OAuth URL in a new window/tab to bypass iframe restrictions
+        window.open(data.url, '_blank');
+      } else {
+        // Fallback to direct redirect if no URL returned but no error
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during Google sign in.');
@@ -390,7 +410,7 @@ export default function AuthScreens({
         gender: clientProfile.gender,
         age: clientProfile.age,
         profile_photo: clientProfile.rawProfilePhoto || clientProfile.profilePhoto, // Use raw if available
-        wallet_balance: 0.00 // start at zero
+        wallet_balance: 15000.00 // initial balance
       });
 
     if (error) {

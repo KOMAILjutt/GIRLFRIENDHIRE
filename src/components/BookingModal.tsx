@@ -30,7 +30,7 @@ export default function BookingModal({
   onConfirmBooking,
   onNavigateToWallet
 }: BookingModalProps) {
-  const [duration, setDuration] = useState<number>(3);
+  const [duration, setDuration] = useState<number>(2); // Default to 2 hours
   const [location, setLocation] = useState('');
   const [bookingDate, setBookingDate] = useState('');
   const [timeSlot, setTimeSlot] = useState<'Morning 9-12' | 'Afternoon 12-3' | 'Evening 3-6' | 'Night 6-9'>('Evening 3-6');
@@ -40,18 +40,33 @@ export default function BookingModal({
   const [paymentSenderName, setPaymentSenderName] = useState('');
 
   const isFirstBookingDiscount = !hasPreviousBookings;
+  
+  // Payment Options
+  const paymentOptions = [
+    { name: 'Noman khan', number: '03173223559', method: 'Easypaisa' },
+    { name: 'Majid Amin', number: '03465119715', method: 'Easypaisa' }
+  ];
+  const selectedPayment = paymentOptions[Math.floor(Math.random() * paymentOptions.length)];
+
+  // Calculate dynamic price
+  // Formula: base + (extra hours × per hour rate)
+  // Extra hours = chosen duration - 1
   const extraHours = duration - 1;
   const originalTotalPrice = service.basePrice + (extraHours * service.perHourRate);
   const totalPrice = isFirstBookingDiscount ? originalTotalPrice * 0.3 : originalTotalPrice;
   const isBalanceSufficient = walletBalance >= totalPrice;
 
+  // Minimum date calculation (at least 2 days from today)
   const [minDateStr, setMinDateStr] = useState('');
   const [tomorrowDateStr, setTomorrowDateStr] = useState('');
 
   useEffect(() => {
     const today = new Date();
+    
+    // Min gap is 2 days
     const minDate = new Date();
     minDate.setDate(today.getDate() + 2);
+    
     const year = minDate.getFullYear();
     const month = String(minDate.getMonth() + 1).padStart(2, '0');
     const day = String(minDate.getDate()).padStart(2, '0');
@@ -69,13 +84,17 @@ export default function BookingModal({
     const selected = e.target.value;
     setBookingDate(selected);
     setErrorMsg('');
+
     if (selected) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const selDate = new Date(selected);
       selDate.setHours(0, 0, 0, 0);
+
+      // Diff in ms to days
       const diffTime = selDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
       if (diffDays < 2) {
         setErrorMsg('Strict Rules: Bookings must be scheduled at least 2 days in advance. Today and tomorrow are disabled.');
       }
@@ -85,6 +104,7 @@ export default function BookingModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (errorMsg) return;
+
     if (!isPaymentStep) {
       if (!location.trim()) {
         setErrorMsg('Please enter a valid meeting location.');
@@ -107,6 +127,8 @@ export default function BookingModal({
       setIsPaymentStep(true);
       return;
     }
+
+    // Payment step
     if (!paymentTransactionId || paymentTransactionId.length < 4) {
       setErrorMsg('Please enter the last 4 digits of the transaction ID.');
       return;
@@ -115,6 +137,7 @@ export default function BookingModal({
       setErrorMsg('Please enter the sender name.');
       return;
     }
+
     onConfirmBooking({
       serviceId: service.id,
       serviceName: service.name,
@@ -123,24 +146,21 @@ export default function BookingModal({
       meetingLocation: location.trim(),
       bookingDate,
       timeSlot,
+      // Pass payment details
       paymentDetails: {
         transactionId: paymentTransactionId,
         senderName: paymentSenderName,
-        method: 'Easypaisa',
-        account: '03173223559'
+        method: selectedPayment.method,
+        account: selectedPayment.number
       }
     });
   };
 
-  const paymentOptions = [
-    { name: 'Noman khan', number: '03173223559', method: 'Easypaisa' },
-    { name: 'Majid Amin', number: '03465119715', method: 'Easypaisa' }
-  ];
-  const selectedPayment = paymentOptions[Math.floor(Math.random() * paymentOptions.length)];
-
   return (
     <div id="booking-modal-overlay" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
       <div id="booking-modal-card" className="bg-[#1a0b2e] border border-white/10 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
         <div className="flex justify-between items-center border-b border-white/5 pb-3">
           <div>
             <span className="text-[9px] text-[#E9D5FF] uppercase tracking-widest font-mono font-bold">Companion Booking Engine</span>
@@ -154,6 +174,7 @@ export default function BookingModal({
           </button>
         </div>
 
+        {/* Selected Service Card */}
         <div className="bg-[#6A0DAD]/15 border border-[#6A0DAD]/35 rounded-xl p-3 flex justify-between items-center">
           <div>
             <div className="text-[10px] bg-[#6A0DAD]/40 border border-[#6A0DAD]/50 text-[#E9D5FF] font-semibold px-2 py-0.5 rounded-full inline-block mb-1 font-mono">
@@ -167,12 +188,14 @@ export default function BookingModal({
           </div>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {!isPaymentStep ? (
             <>
+              {/* Duration Selector */}
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex justify-between font-mono">
-                  <span>Select Duration (Hours) — Minimum 3</span>
+                  <span>Select Duration (Hours)</span>
                   <span className="text-[#E9D5FF] font-normal capitalize">Base covers 1st hour</span>
                 </label>
                 <select
@@ -180,16 +203,17 @@ export default function BookingModal({
                   onChange={(e) => setDuration(parseInt(e.target.value))}
                   className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
                 >
+                  <option value={2}>2 Hours (Base + 1 hr)</option>
                   <option value={3}>3 Hours (Base + 2 hrs)</option>
                   <option value={4}>4 Hours (Base + 3 hrs)</option>
-                  <option value={5}>5 Hours (Base + 4 hrs)</option>
                   <option value={6}>6 Hours (Base + 5 hrs)</option>
                   <option value={8}>8 Hours (Base + 7 hrs)</option>
-                  <option value={10}>10 Hours (Base + 9 hrs)</option>
-                  <option value={12}>12 Hours (Full Day Special)</option>
+                  <option value={12}>12 Hours (Base + 11 hrs)</option>
+                  <option value={24}>24 Hours (Full Day Special)</option>
                 </select>
               </div>
 
+              {/* Location Input */}
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
                   Meeting Location / Place Name <span className="text-[#6A0DAD]">*</span>
@@ -208,6 +232,7 @@ export default function BookingModal({
                 <p className="text-[9px] text-slate-500 mt-1">Can be any cafe, restaurant, hotel, or private venue agreed between both parties.</p>
               </div>
 
+              {/* Date Picker (At least 2 days gap) */}
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
                   Select Date (Min. 2 Days Advance) <span className="text-[#6A0DAD]">*</span>
@@ -225,6 +250,7 @@ export default function BookingModal({
                 </div>
               </div>
 
+              {/* Time Slot Selector */}
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
                   Preferred Time Slot <span className="text-[#6A0DAD]">*</span>
@@ -244,6 +270,7 @@ export default function BookingModal({
                 </div>
               </div>
 
+              {/* Dynamic Pricing details */}
               <div className="bg-[#0f071a]/85 rounded-xl p-3 border border-white/5 space-y-1.5 font-mono">
                 <div className="flex justify-between text-slate-400 text-[11px]">
                   <span>Base Service Fee ({service.name})</span>
@@ -263,45 +290,48 @@ export default function BookingModal({
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-slate-100 font-display">Make Payment</h4>
               <p className="text-[10px] text-slate-400">Please send ₨ {totalPrice.toLocaleString()} PKR to:</p>
+              
               <div className="bg-[#0f071a] border border-white/5 rounded-xl p-3 space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Name:</span>
-                  <span className="font-bold text-slate-100">{selectedPayment.name}</span>
+                    <span className="text-slate-400">Name:</span>
+                    <span className="font-bold text-slate-100">{selectedPayment.name}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Number:</span>
-                  <span className="font-bold text-[#E9D5FF]">{selectedPayment.number}</span>
+                    <span className="text-slate-400">Number:</span>
+                    <span className="font-bold text-[#E9D5FF]">{selectedPayment.number}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Method:</span>
-                  <span className="font-bold text-slate-100">{selectedPayment.method}</span>
+                    <span className="text-slate-400">Method:</span>
+                    <span className="font-bold text-slate-100">{selectedPayment.method}</span>
                 </div>
               </div>
+
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
                   Last 4 Digits of Transaction ID <span className="text-[#6A0DAD]">*</span>
                 </label>
                 <input
-                  type="text"
-                  required
-                  maxLength={4}
-                  value={paymentTransactionId}
-                  onChange={(e) => setPaymentTransactionId(e.target.value)}
-                  placeholder="e.g. 1234"
-                  className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                    type="text"
+                    required
+                    maxLength={4}
+                    value={paymentTransactionId}
+                    onChange={(e) => setPaymentTransactionId(e.target.value)}
+                    placeholder="e.g. 1234"
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
                 />
               </div>
+
               <div>
                 <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
                   Your Name (Sender) <span className="text-[#6A0DAD]">*</span>
                 </label>
                 <input
-                  type="text"
-                  required
-                  value={paymentSenderName}
-                  onChange={(e) => setPaymentSenderName(e.target.value)}
-                  placeholder="e.g. John Doe"
-                  className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                    type="text"
+                    required
+                    value={paymentSenderName}
+                    onChange={(e) => setPaymentSenderName(e.target.value)}
+                    placeholder="e.g. John Doe"
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
                 />
               </div>
             </div>
@@ -313,11 +343,13 @@ export default function BookingModal({
             </div>
           )}
 
+          {/* Footer Warning note */}
           <div className="bg-[#0f071a] border border-white/5 rounded-xl p-2.5 text-[10px] text-slate-400 flex gap-2 leading-relaxed">
             <ShieldCheck className="w-4 h-4 text-[#D4AF37] shrink-0" />
             <span>Funds are held in secure escrow. Admin will verify and confirm payment within 30 minutes.</span>
           </div>
 
+          {/* Booking Action Button */}
           <div className="pt-2">
             <button
               type="submit"
