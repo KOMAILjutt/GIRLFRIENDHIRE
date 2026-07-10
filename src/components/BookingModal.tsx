@@ -53,7 +53,7 @@ export default function BookingModal({
   // Extra hours = chosen duration - 1
   const extraHours = duration - 1;
   const originalTotalPrice = service.basePrice + (extraHours * service.perHourRate);
-  const totalPrice = isFirstBookingDiscount ? originalTotalPrice * 0.3 : originalTotalPrice;
+  const totalPrice = isFirstBookingDiscount ? originalTotalPrice * 0.7 : originalTotalPrice; // 30% off for first booking
   const isBalanceSufficient = walletBalance >= totalPrice;
 
   // Minimum date calculation (at least 2 days from today)
