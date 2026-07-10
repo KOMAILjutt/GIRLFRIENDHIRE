@@ -1,340 +1,332 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, Upload, Calendar, MapPin, Clock } from 'lucide-react';
-import { Companion } from '../types';
-import { SERVICES } from '../data';
-
-// Payment accounts - randomly shown
-const PAYMENT_ACCOUNTS = [
-  { number: '03173223559', name: 'Noman Khan', method: 'Easypaisa' },
-  { number: '03465119715', name: 'Majid Amin', method: 'Easypaisa' }
-];
+import React, { useState, useEffect } from 'react';
+import { Calendar, MapPin, Clock, X, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Companion, ServiceItem } from '../types';
 
 interface BookingModalProps {
   companion: Companion;
+  service: ServiceItem;
+  walletBalance: number;
+  hasPreviousBookings: boolean;
   onClose: () => void;
-  onConfirmBooking: (bookingData: any) => void;
+  onConfirmBooking: (bookingData: {
+    serviceId: string;
+    serviceName: string;
+    durationHours: number;
+    totalPrice: number;
+    meetingLocation: string;
+    bookingDate: string;
+    timeSlot: any;
+    paymentDetails: any;
+  }) => void;
+  onNavigateToWallet: () => void;
 }
 
-export default function BookingModal({ companion, onClose, onConfirmBooking }: BookingModalProps) {
-  const [step, setStep] = useState<'select' | 'pay' | 'verify'>('select');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [bookingHours, setBookingHours] = useState<number>(3);
+export default function BookingModal({
+  companion,
+  service,
+  walletBalance,
+  hasPreviousBookings,
+  onClose,
+  onConfirmBooking,
+  onNavigateToWallet
+}: BookingModalProps) {
+  const [duration, setDuration] = useState<number>(3);
+  const [location, setLocation] = useState('');
   const [bookingDate, setBookingDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('Evening 3-6');
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [paymentAccount, setPaymentAccount] = useState(PAYMENT_ACCOUNTS[0]);
-  const [trxLast4, setTrxLast4] = useState('');
-  const [senderName, setSenderName] = useState('');
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [timeSlot, setTimeSlot] = useState<'Morning 9-12' | 'Afternoon 12-3' | 'Evening 3-6' | 'Night 6-9'>('Evening 3-6');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isPaymentStep, setIsPaymentStep] = useState(false);
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const [paymentSenderName, setPaymentSenderName] = useState('');
 
-  // Get companion services properly mapped
-  const companionServices = companion.services.map((cs) => {
-    const original = SERVICES.find((s) => s.id === cs.serviceId);
-    if (!original) return null;
-    return {
-      serviceId: cs.serviceId,
-      name: original.name,
-      category: original.category,
-      basePrice: cs.customBasePrice || original.basePrice,
-      perHourRate: original.perHourRate
-    };
-  }).filter(Boolean) as { serviceId: string; name: string; category: string; basePrice: number; perHourRate: number }[];
+  const isFirstBookingDiscount = !hasPreviousBookings;
+  const extraHours = duration - 1;
+  const originalTotalPrice = service.basePrice + (extraHours * service.perHourRate);
+  const totalPrice = isFirstBookingDiscount ? originalTotalPrice * 0.3 : originalTotalPrice;
+  const isBalanceSufficient = walletBalance >= totalPrice;
 
-  // Set default service on mount
-  React.useEffect(() => {
-    if (companionServices.length > 0 && !selectedServiceId) {
-      setSelectedServiceId(companionServices[0].serviceId);
-    }
-    // Random payment account
-    const randomIndex = Math.floor(Math.random() * PAYMENT_ACCOUNTS.length);
-    setPaymentAccount(PAYMENT_ACCOUNTS[randomIndex]);
-  }, [companion]);
+  const [minDateStr, setMinDateStr] = useState('');
+  const [tomorrowDateStr, setTomorrowDateStr] = useState('');
 
-  const getServicePrice = (serviceId: string, hours: number) => {
-    const svc = companionServices.find(s => s.serviceId === serviceId);
-    if (!svc) return 0;
-    return svc.basePrice + (svc.perHourRate * (hours - 1));
-  };
+  useEffect(() => {
+    const today = new Date();
+    const minDate = new Date();
+    minDate.setDate(today.getDate() + 2);
+    const year = minDate.getFullYear();
+    const month = String(minDate.getMonth() + 1).padStart(2, '0');
+    const day = String(minDate.getDate()).padStart(2, '0');
+    setMinDateStr(`${year}-${month}-${day}`);
 
-  const selectedService = companionServices.find(s => s.serviceId === selectedServiceId);
-  const totalPrice = selectedService ? getServicePrice(selectedServiceId, bookingHours) : 0;
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    const tomY = tomorrow.getFullYear();
+    const tomM = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const tomD = String(tomorrow.getDate()).padStart(2, '0');
+    setTomorrowDateStr(`${tomY}-${tomM}-${tomD}`);
+  }, []);
 
-  const handleCopyNumber = () => {
-    navigator.clipboard.writeText(paymentAccount.number);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleProceedToPayment = () => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.value;
+    setBookingDate(selected);
     setErrorMsg('');
-    if (!selectedServiceId) {
-      setErrorMsg('Please select a service.');
-      return;
+    if (selected) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selDate = new Date(selected);
+      selDate.setHours(0, 0, 0, 0);
+      const diffTime = selDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 2) {
+        setErrorMsg('Strict Rules: Bookings must be scheduled at least 2 days in advance. Today and tomorrow are disabled.');
+      }
     }
-    if (!bookingDate) {
-      setErrorMsg('Please select a booking date.');
-      return;
-    }
-    if (!meetingLocation.trim()) {
-      setErrorMsg('Please enter a meeting location.');
-      return;
-    }
-    setStep('pay');
   };
 
-  const handleSubmitPayment = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-
-    if (trxLast4.length !== 4) {
-      setErrorMsg('Please enter last 4 digits of TRX ID.');
+    if (errorMsg) return;
+    if (!isPaymentStep) {
+      if (!location.trim()) {
+        setErrorMsg('Please enter a valid meeting location.');
+        return;
+      }
+      if (!bookingDate) {
+        setErrorMsg('Please select a booking date.');
+        return;
+      }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selDate = new Date(bookingDate);
+      selDate.setHours(0, 0, 0, 0);
+      const diffTime = selDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 2) {
+        setErrorMsg('Strict Rules: Please pick a date at least 2 days from now.');
+        return;
+      }
+      setIsPaymentStep(true);
       return;
     }
-    if (!senderName.trim()) {
-      setErrorMsg('Please enter sender name.');
+    if (!paymentTransactionId || paymentTransactionId.length < 4) {
+      setErrorMsg('Please enter the last 4 digits of the transaction ID.');
       return;
     }
-
+    if (!paymentSenderName.trim()) {
+      setErrorMsg('Please enter the sender name.');
+      return;
+    }
     onConfirmBooking({
-      companionId: companion.id,
-      companionName: companion.name,
-      serviceId: selectedServiceId,
-      serviceName: selectedService?.name,
-      durationHours: bookingHours,
-      totalPrice: totalPrice,
+      serviceId: service.id,
+      serviceName: service.name,
+      durationHours: duration,
+      totalPrice,
+      meetingLocation: location.trim(),
       bookingDate,
       timeSlot,
-      meetingLocation: meetingLocation.trim(),
-      paymentTo: paymentAccount.number,
-      paymentAccountName: paymentAccount.name,
-      trxLast4,
-      senderName: senderName.trim(),
-      screenshot: screenshot?.name || null
+      paymentDetails: {
+        transactionId: paymentTransactionId,
+        senderName: paymentSenderName,
+        method: 'Easypaisa',
+        account: '03173223559'
+      }
     });
-
-    setStep('verify');
-    setTimeout(() => {
-      onClose();
-    }, 2000);
   };
 
-  // Minimum date (2 days from now)
-  const getMinDate = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 2);
-    return d.toISOString().split('T')[0];
-  };
+  const paymentOptions = [
+    { name: 'Noman khan', number: '03173223559', method: 'Easypaisa' },
+    { name: 'Majid Amin', number: '03465119715', method: 'Easypaisa' }
+  ];
+  const selectedPayment = paymentOptions[Math.floor(Math.random() * paymentOptions.length)];
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1a0b2e] border border-[#6A0DAD]/50 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
-
-        {/* Modal Header */}
-        <div className="p-4 border-b border-white/10 flex justify-between items-center">
-          <h2 className="text-sm font-bold text-white font-display">
-            {step === 'select' && 'Book ' + companion.name}
-            {step === 'pay' && 'Complete Payment'}
-            {step === 'verify' && 'Verify Payment'}
-          </h2>
-          <button 
+    <div id="booking-modal-overlay" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
+      <div id="booking-modal-card" className="bg-[#1a0b2e] border border-white/10 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center border-b border-white/5 pb-3">
+          <div>
+            <span className="text-[9px] text-[#E9D5FF] uppercase tracking-widest font-mono font-bold">Companion Booking Engine</span>
+            <h3 className="text-sm font-bold text-slate-100 font-display">Book {companion.name}</h3>
+          </div>
+          <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white"
+            className="text-slate-400 hover:text-slate-200 p-1.5 bg-[#0f071a] border border-white/5 rounded-full transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* STEP 1: Select Service, Hours, Date, Location */}
-        {step === 'select' && (
-          <div className="p-4 space-y-4">
-            {/* Service Select */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Select Service</label>
-              <select
-                value={selectedServiceId}
-                onChange={(e) => setSelectedServiceId(e.target.value)}
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              >
-                {companionServices.map((svc) => (
-                  <option key={svc.serviceId} value={svc.serviceId}>
-                    {svc.name} — ₨ {svc.basePrice.toLocaleString()} + {svc.perHourRate}/hr
-                  </option>
-                ))}
-              </select>
+        <div className="bg-[#6A0DAD]/15 border border-[#6A0DAD]/35 rounded-xl p-3 flex justify-between items-center">
+          <div>
+            <div className="text-[10px] bg-[#6A0DAD]/40 border border-[#6A0DAD]/50 text-[#E9D5FF] font-semibold px-2 py-0.5 rounded-full inline-block mb-1 font-mono">
+              {service.category} Service
             </div>
-
-            {/* Hours Select - Minimum 3 */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Hours (Minimum 3)</label>
-              <select
-                value={bookingHours}
-                onChange={(e) => setBookingHours(Number(e.target.value))}
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              >
-                {[3,4,5,6,8,10,12].map(h => (
-                  <option key={h} value={h}>{h} Hours</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Select */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> Booking Date (Min 2 days advance)
-              </label>
-              <input
-                type="date"
-                min={getMinDate()}
-                value={bookingDate}
-                onChange={(e) => setBookingDate(e.target.value)}
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              />
-            </div>
-
-            {/* Time Slot */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Time Slot
-              </label>
-              <select
-                value={timeSlot}
-                onChange={(e) => setTimeSlot(e.target.value)}
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              >
-                <option value="Morning 9-12">Morning 9am - 12pm</option>
-                <option value="Afternoon 12-3">Afternoon 12pm - 3pm</option>
-                <option value="Evening 3-6">Evening 3pm - 6pm</option>
-                <option value="Night 6-9">Night 6pm - 9pm</option>
-              </select>
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> Meeting Location
-              </label>
-              <input
-                type="text"
-                value={meetingLocation}
-                onChange={(e) => setMeetingLocation(e.target.value)}
-                placeholder="e.g. Gloria Jeans, DHA Phase 6"
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              />
-            </div>
-
-            {/* Total Amount */}
-            <div className="bg-[#6A0DAD]/10 border border-[#6A0DAD]/30 rounded-xl p-3">
-              <p className="text-xs text-slate-400">Total Amount</p>
-              <p className="text-xl font-bold text-white">₨ {totalPrice.toLocaleString()}</p>
-              <p className="text-[10px] text-emerald-400">50% OFF applied!</p>
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-400 font-medium">{errorMsg}</p>}
-
-            <button
-              onClick={handleProceedToPayment}
-              className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
-            >
-              Proceed to Payment
-            </button>
+            <h4 className="font-semibold text-xs text-slate-100 font-display">{service.name}</h4>
           </div>
-        )}
-
-        {/* STEP 2: Payment Instructions */}
-        {step === 'pay' && (
-          <div className="p-4 space-y-4">
-            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 text-center">
-              <p className="text-xs text-emerald-400 mb-1">Send payment to this EasyPaisa number:</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <p className="text-lg font-bold text-white font-mono">{paymentAccount.number}</p>
-                <button 
-                  onClick={handleCopyNumber}
-                  className="text-[#D4AF37] hover:text-white"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Account: {paymentAccount.name}</p>
-            </div>
-
-            <div className="bg-[#0f071a] border border-white/5 rounded-xl p-3 space-y-1 text-xs text-slate-400">
-              <p className="font-semibold text-slate-300 mb-1">Payment Instructions:</p>
-              <p>1. Open EasyPaisa app</p>
-              <p>2. Send <strong className="text-white">₨ {totalPrice.toLocaleString()}</strong></p>
-              <p>3. Enter number: <strong className="text-white">{paymentAccount.number}</strong></p>
-              <p>4. Note down the TRX ID</p>
-            </div>
-
-            <button
-              onClick={() => setStep('verify')}
-              className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
-            >
-              I Have Paid — Enter Details
-            </button>
+          <div className="text-right">
+            <div className="font-bold text-xs text-slate-100">₨ {service.basePrice.toLocaleString()}</div>
+            <div className="text-[10px] text-slate-400 font-mono">+{service.perHourRate}/hr extra</div>
           </div>
-        )}
+        </div>
 
-        {/* STEP 3: Verify Payment */}
-        {step === 'verify' && (
-          <form onSubmit={handleSubmitPayment} className="p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Last 4 Digits of TRX ID</label>
-              <input
-                type="text"
-                maxLength={4}
-                value={trxLast4}
-                onChange={(e) => setTrxLast4(e.target.value.replace(/\D/g, ''))}
-                placeholder="e.g. 7845"
-                required
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 text-center font-mono tracking-widest"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Sender Name (Your Name)</label>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Enter your full name"
-                required
-                className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Screenshot (Optional)</label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="screenshot-upload"
-                />
-                <label 
-                  htmlFor="screenshot-upload"
-                  className="flex items-center justify-center gap-2 w-full bg-[#0f071a] border border-dashed border-[#6A0DAD]/50 rounded-xl px-3 py-3 text-xs text-slate-400 cursor-pointer hover:border-[#6A0DAD]"
-                >
-                  <Upload className="w-4 h-4" />
-                  {screenshot ? screenshot.name : 'Click to upload screenshot'}
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {!isPaymentStep ? (
+            <>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex justify-between font-mono">
+                  <span>Select Duration (Hours) — Minimum 3</span>
+                  <span className="text-[#E9D5FF] font-normal capitalize">Base covers 1st hour</span>
                 </label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                >
+                  <option value={3}>3 Hours (Base + 2 hrs)</option>
+                  <option value={4}>4 Hours (Base + 3 hrs)</option>
+                  <option value={5}>5 Hours (Base + 4 hrs)</option>
+                  <option value={6}>6 Hours (Base + 5 hrs)</option>
+                  <option value={8}>8 Hours (Base + 7 hrs)</option>
+                  <option value={10}>10 Hours (Base + 9 hrs)</option>
+                  <option value={12}>12 Hours (Full Day Special)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
+                  Meeting Location / Place Name <span className="text-[#6A0DAD]">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    required
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Gloria Jean's Cafe, DHA Phase 6"
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                  />
+                </div>
+                <p className="text-[9px] text-slate-500 mt-1">Can be any cafe, restaurant, hotel, or private venue agreed between both parties.</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
+                  Select Date (Min. 2 Days Advance) <span className="text-[#6A0DAD]">*</span>
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                  <input
+                    type="date"
+                    required
+                    min={minDateStr}
+                    value={bookingDate}
+                    onChange={handleDateChange}
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
+                  Preferred Time Slot <span className="text-[#6A0DAD]">*</span>
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                  <select
+                    value={timeSlot}
+                    onChange={(e: any) => setTimeSlot(e.target.value)}
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                  >
+                    <option value="Morning 9-12">Morning 9am - 12pm</option>
+                    <option value="Afternoon 12-3">Afternoon 12pm - 3pm</option>
+                    <option value="Evening 3-6">Evening 3pm - 6pm</option>
+                    <option value="Night 6-9">Night 6pm - 9pm</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-[#0f071a]/85 rounded-xl p-3 border border-white/5 space-y-1.5 font-mono">
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Base Service Fee ({service.name})</span>
+                  <span>₨ {service.basePrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Extra Hours ({extraHours} hrs @ ₨ {service.perHourRate}/hr)</span>
+                  <span>₨ {(extraHours * service.perHourRate).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-slate-200 font-bold border-t border-white/5 pt-1.5 text-xs">
+                  <span>Total calculated</span>
+                  <span className="text-[#E9D5FF]">₨ {totalPrice.toLocaleString()} PKR</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-100 font-display">Make Payment</h4>
+              <p className="text-[10px] text-slate-400">Please send ₨ {totalPrice.toLocaleString()} PKR to:</p>
+              <div className="bg-[#0f071a] border border-white/5 rounded-xl p-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Name:</span>
+                  <span className="font-bold text-slate-100">{selectedPayment.name}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Number:</span>
+                  <span className="font-bold text-[#E9D5FF]">{selectedPayment.number}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400">Method:</span>
+                  <span className="font-bold text-slate-100">{selectedPayment.method}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
+                  Last 4 Digits of Transaction ID <span className="text-[#6A0DAD]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={4}
+                  value={paymentTransactionId}
+                  onChange={(e) => setPaymentTransactionId(e.target.value)}
+                  placeholder="e.g. 1234"
+                  className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1 font-mono">
+                  Your Name (Sender) <span className="text-[#6A0DAD]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={paymentSenderName}
+                  onChange={(e) => setPaymentSenderName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#6A0DAD]"
+                />
               </div>
             </div>
+          )}
 
-            {errorMsg && <p className="text-xs text-rose-400 font-medium">{errorMsg}</p>}
+          {errorMsg && (
+            <div className="bg-rose-950/20 border border-rose-900/40 rounded-xl p-2.5 text-rose-400 text-[10px] font-semibold">
+              {errorMsg}
+            </div>
+          )}
 
+          <div className="bg-[#0f071a] border border-white/5 rounded-xl p-2.5 text-[10px] text-slate-400 flex gap-2 leading-relaxed">
+            <ShieldCheck className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            <span>Funds are held in secure escrow. Admin will verify and confirm payment within 30 minutes.</span>
+          </div>
+
+          <div className="pt-2">
             <button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl py-3 text-xs transition-colors"
+              className="w-full font-bold rounded-xl py-3 text-xs transition-all shadow-lg flex items-center justify-center gap-2 bg-[#6A0DAD] hover:brightness-110 text-white shadow-[#6A0DAD]/20 cursor-pointer"
             >
-              Submit Booking Request
+              {isPaymentStep ? 'Confirm Payment & Book' : 'Proceed to Escrow Payment'} – ₨ {totalPrice.toLocaleString()} PKR
             </button>
-          </form>
-        )}
-
+          </div>
+        </form>
       </div>
     </div>
   );
