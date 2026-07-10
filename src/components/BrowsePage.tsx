@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, MapPin, Star, Filter, ShieldCheck, X } from 'lucide-react';
 import { Companion } from '../types';
 import { CITIES, SERVICES } from '../data';
+import BookingModal from './BookingModal'; // ADD THIS IMPORT
 
 interface BrowsePageProps {
   companions: Companion[];
@@ -12,6 +13,11 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('All');
+  
+  // ADD THESE STATES FOR BOOKING MODAL
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
+  const [selectedService, setSelectedService] = useState<any>(null);
 
   const handleClear = () => {
     setSelectedCity('All');
@@ -19,7 +25,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     setSelectedGender('All');
   };
 
-  // Extract starting from price for a companion
   const getStartingPrice = (comp: Companion) => {
     let minPrice = Infinity;
     comp.services.forEach((cs) => {
@@ -34,7 +39,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     return minPrice === Infinity ? 2000 : minPrice;
   };
 
-  // Get service names as tags for card display
   const getServiceTags = (comp: Companion) => {
     return comp.services.map((cs) => {
       const original = SERVICES.find((s) => s.id === cs.serviceId);
@@ -42,44 +46,51 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     }).filter(Boolean) as string[];
   };
 
-  // Filter companions
+  // ADD THIS FUNCTION
+  const handleBookNow = (comp: Companion) => {
+    const firstService = comp.services[0];
+    const serviceData = SERVICES.find(s => s.id === firstService?.serviceId);
+    
+    setSelectedCompanion(comp);
+    setSelectedService(serviceData || null);
+    setShowBookingModal(true);
+  };
+
+  const handleCloseBooking = () => {
+    setShowBookingModal(false);
+    setSelectedCompanion(null);
+    setSelectedService(null);
+  };
+
+  const handleConfirmBooking = (bookingData: any) => {
+    console.log('Booking confirmed:', bookingData);
+    // Here you send to Supabase
+    setShowBookingModal(false);
+    alert('Booking submitted! Admin will verify payment.');
+  };
+
   const filteredCompanions = companions.filter((comp) => {
-    // Only display approved ones in browse
     if (comp.status !== 'Approved') return false;
-
-    // Filter by city dropdown
-    if (selectedCity !== 'All' && comp.city.toLowerCase() !== selectedCity.toLowerCase()) {
-      return false;
-    }
-
-    // Filter by manual search input (city, name, interests, bio)
+    if (selectedCity !== 'All' && comp.city.toLowerCase() !== selectedCity.toLowerCase()) return false;
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
       const matchName = comp.name.toLowerCase().includes(query);
       const matchCity = comp.city.toLowerCase().includes(query);
       const matchBio = comp.bio.toLowerCase().includes(query);
       const matchInterests = comp.interests.some(i => i.toLowerCase().includes(query));
-      
-      if (!matchName && !matchCity && !matchBio && !matchInterests) {
-        return false;
-      }
+      if (!matchName && !matchCity && !matchBio && !matchInterests) return false;
     }
-
-    // Filter by gender
-    if (selectedGender !== 'All' && comp.gender !== selectedGender) {
-      return false;
-    }
-
+    if (selectedGender !== 'All' && comp.gender !== selectedGender) return false;
     return true;
   });
 
   return (
     <div id="companion-browse-page" className="p-4 space-y-6 pb-24 animate-fade-in">
-      {/* Special Offer Banner */}
+      {/* Special Offer Banner - UPDATED */}
       <div className="bg-gradient-to-r from-[#6A0DAD] to-[#4c0780] rounded-2xl p-4 text-center text-white shadow-lg">
-        <h2 className="text-sm font-bold font-display uppercase tracking-wider">Start Booking from 500 Only!</h2>
+        <h2 className="text-sm font-bold font-display uppercase tracking-wider">50% OFF All Services!</h2>
         <p className="text-[11px] mt-1 text-purple-100">
-          First person first time booking has 70% off!
+          Book now and save half price!
         </p>
       </div>
 
@@ -91,7 +102,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
         </div>
 
         <div className="grid grid-cols-1 gap-2.5">
-          {/* Text input search */}
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
             <input
@@ -104,7 +114,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {/* Grouped City dropdown */}
             <div>
               <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">City Filter</label>
               <select
@@ -131,7 +140,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
               </select>
             </div>
 
-            {/* Gender filter */}
             <div>
               <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">Gender</label>
               <select
@@ -148,7 +156,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex justify-between items-center pt-1 text-[11px]">
           <span className="text-slate-400 font-medium">
             Found <strong className="text-[#E9D5FF]">{filteredCompanions.length}</strong> available results
@@ -196,13 +203,11 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
                     referrerPolicy="no-referrer"
                   />
 
-                  {/* Rating Badge Overlay */}
                   <div className="absolute top-2 left-2 bg-[#0f071a]/85 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-white/5 text-[10px] text-slate-200 font-bold">
                     <Star className="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]" />
                     <span>{comp.rating.toFixed(1)}</span>
                   </div>
 
-                  {/* Verification Overlay Badge */}
                   {comp.isVerified && (
                     <div className="absolute top-2 right-2 bg-[#6A0DAD]/90 border border-[#6A0DAD]/50 text-white p-1 rounded-full flex items-center justify-center shadow-md shadow-[#0f071a]/30" title="Admin Verified">
                       <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
@@ -224,7 +229,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
                       <span className="line-clamp-1">{comp.city}</span>
                     </div>
 
-                    {/* Service tag clips (max 2 for spacing) */}
                     <div className="flex flex-wrap gap-1 pt-1 overflow-hidden h-[18px]">
                       {serviceTags.slice(0, 2).map((st, i) => (
                         <span
@@ -237,7 +241,7 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
                     </div>
                   </div>
 
-                  {/* Price Tag & button */}
+                  {/* Price Tag & Book Now button */}
                   <div className="border-t border-white/5 pt-2 flex flex-col gap-1.5 mt-auto">
                     <div className="text-[10px] text-slate-400">
                       Starts from{' '}
@@ -246,10 +250,10 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
                       </span>
                     </div>
                     <button
-                      onClick={() => onSelectCompanion(comp)}
+                      onClick={() => handleBookNow(comp)}
                       className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-semibold rounded-xl py-1.5 text-[10px] transition-colors shadow-md cursor-pointer"
                     >
-                      View Profile
+                      Book Now
                     </button>
                   </div>
                 </div>
@@ -257,6 +261,22 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
             );
           })}
         </div>
+      )}
+
+      {/* BOOKING MODAL - ADD THIS AT THE END */}
+      {showBookingModal && selectedCompanion && selectedService && (
+        <BookingModal
+          companion={selectedCompanion}
+          service={selectedService}
+          walletBalance={0} // You can change this if you have wallet system
+          hasPreviousBookings={false} // You can check this from user data
+          onClose={handleCloseBooking}
+          onConfirmBooking={handleConfirmBooking}
+          onNavigateToWallet={() => {
+            handleCloseBooking();
+            // Navigate to wallet if needed
+          }}
+        />
       )}
     </div>
   );
