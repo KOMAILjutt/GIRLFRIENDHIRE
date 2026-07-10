@@ -1,23 +1,37 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Filter, ShieldCheck, X } from 'lucide-react';
+import { Search, MapPin, Star, Filter, ShieldCheck, X, Copy, Check, Upload } from 'lucide-react';
 import { Companion } from '../types';
 import { CITIES, SERVICES } from '../data';
-import BookingModal from './BookingModal'; // ADD THIS IMPORT
 
 interface BrowsePageProps {
   companions: Companion[];
   onSelectCompanion: (companion: Companion) => void;
 }
 
+// Payment accounts
+const PAYMENT_ACCOUNTS = [
+  { number: '03173223559', name: 'Noman Khan' },
+  { number: '03465119715', name: 'Majid Amin' }
+];
+
 export default function BrowsePage({ companions, onSelectCompanion }: BrowsePageProps) {
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('All');
   
-  // ADD THESE STATES FOR BOOKING MODAL
+  // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<string>('');
+  const [bookingHours, setBookingHours] = useState<number>(1);
+  const [paymentAccount, setPaymentAccount] = useState<{number: string, name: string} | null>(null);
+  
+  // Payment verification state
+  const [trxLast4, setTrxLast4] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'select' | 'pay' | 'verify'>('select');
+  const [copied, setCopied] = useState(false);
 
   const handleClear = () => {
     setSelectedCity('All');
@@ -46,27 +60,67 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     }).filter(Boolean) as string[];
   };
 
-  // ADD THIS FUNCTION
+  const getServicePrice = (serviceId: string, hours: number = 1) => {
+    const service = SERVICES.find(s => s.id === serviceId);
+    if (!service) return 0;
+    return service.basePrice + (service.perHourRate * (hours - 1));
+  };
+
   const handleBookNow = (comp: Companion) => {
-    const firstService = comp.services[0];
-    const serviceData = SERVICES.find(s => s.id === firstService?.serviceId);
-    
     setSelectedCompanion(comp);
-    setSelectedService(serviceData || null);
+    setSelectedService(comp.services[0]?.serviceId || '');
+    setBookingHours(1);
+    setPaymentStep('select');
+    setTrxLast4('');
+    setSenderName('');
+    setScreenshot(null);
     setShowBookingModal(true);
   };
 
-  const handleCloseBooking = () => {
-    setShowBookingModal(false);
-    setSelectedCompanion(null);
-    setSelectedService(null);
+  const handleProceedToPayment = () => {
+    // Randomly select one payment account
+    const randomIndex = Math.floor(Math.random() * PAYMENT_ACCOUNTS.length);
+    setPaymentAccount(PAYMENT_ACCOUNTS[randomIndex]);
+    setPaymentStep('pay');
   };
 
-  const handleConfirmBooking = (bookingData: any) => {
-    console.log('Booking confirmed:', bookingData);
-    // Here you send to Supabase
-    setShowBookingModal(false);
-    alert('Booking submitted! Admin will verify payment.');
+  const handleCopyNumber = () => {
+    if (paymentAccount) {
+      navigator.clipboard.writeText(paymentAccount.number);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleSubmitPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (trxLast4.length !== 4) {
+      alert('Please enter last 4 digits of TRX ID');
+      return;
+    }
+    if (!senderName.trim()) {
+      alert('Please enter sender name');
+      return;
+    }
+
+    // Here you would send to Supabase
+    console.log('Booking submitted:', {
+      companion: selectedCompanion?.id,
+      service: selectedService,
+      hours: bookingHours,
+      amount: getServicePrice(selectedService, bookingHours),
+      paymentTo: paymentAccount,
+      trxLast4,
+      senderName,
+      screenshot: screenshot?.name
+    });
+
+    setPaymentStep('verify');
+    setTimeout(() => {
+      setShowBookingModal(false);
+      alert('Booking request submitted! Admin will verify your payment.');
+    }, 2000);
   };
 
   const filteredCompanions = companions.filter((comp) => {
@@ -86,11 +140,11 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
 
   return (
     <div id="companion-browse-page" className="p-4 space-y-6 pb-24 animate-fade-in">
-      {/* Special Offer Banner - UPDATED */}
+      {/* Special Offer Banner */}
       <div className="bg-gradient-to-r from-[#6A0DAD] to-[#4c0780] rounded-2xl p-4 text-center text-white shadow-lg">
-        <h2 className="text-sm font-bold font-display uppercase tracking-wider">50% OFF All Services!</h2>
+        <h2 className="text-sm font-bold font-display uppercase tracking-wider">Start Booking from 999 Only!</h2>
         <p className="text-[11px] mt-1 text-purple-100">
-          Book now and save half price!
+          50% OFF on all services!
         </p>
       </div>
 
@@ -263,20 +317,163 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
         </div>
       )}
 
-      {/* BOOKING MODAL - ADD THIS AT THE END */}
-      {showBookingModal && selectedCompanion && selectedService && (
-        <BookingModal
-          companion={selectedCompanion}
-          service={selectedService}
-          walletBalance={0} // You can change this if you have wallet system
-          hasPreviousBookings={false} // You can check this from user data
-          onClose={handleCloseBooking}
-          onConfirmBooking={handleConfirmBooking}
-          onNavigateToWallet={() => {
-            handleCloseBooking();
-            // Navigate to wallet if needed
-          }}
-        />
+      {/* BOOKING MODAL */}
+      {showBookingModal && selectedCompanion && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a0b2e] border border-[#6A0DAD]/50 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
+            
+            {/* Modal Header */}
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h2 className="text-sm font-bold text-white font-display">Book {selectedCompanion.name}</h2>
+              <button 
+                onClick={() => setShowBookingModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* STEP 1: Select Service & Hours */}
+            {paymentStep === 'select' && (
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Select Service</label>
+                  <select
+                    value={selectedService}
+                    onChange={(e) => setSelectedService(e.target.value)}
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
+                  >
+                    {selectedCompanion.services.map((cs) => {
+                      const svc = SERVICES.find(s => s.id === cs.serviceId);
+                      return svc ? (
+                        <option key={cs.serviceId} value={cs.serviceId}>
+                          {svc.name} - ₨ {getServicePrice(cs.serviceId, 1).toLocaleString()}
+                        </option>
+                      ) : null;
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Hours</label>
+                  <select
+                    value={bookingHours}
+                    onChange={(e) => setBookingHours(Number(e.target.value))}
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
+                  >
+                    {[1,2,3,4,5,6,8].map(h => (
+                      <option key={h} value={h}>{h} Hour{h>1?'s':''}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-[#6A0DAD]/10 border border-[#6A0DAD]/30 rounded-xl p-3">
+                  <p className="text-xs text-slate-400">Total Amount</p>
+                  <p className="text-xl font-bold text-white">₨ {getServicePrice(selectedService, bookingHours).toLocaleString()}</p>
+                  <p className="text-[10px] text-emerald-400">50% OFF applied!</p>
+                </div>
+
+                <button
+                  onClick={handleProceedToPayment}
+                  className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
+                >
+                  Proceed to Payment
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: Payment Instructions */}
+            {paymentStep === 'pay' && paymentAccount && (
+              <div className="p-4 space-y-4">
+                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 text-center">
+                  <p className="text-xs text-emerald-400 mb-1">Send payment to this EasyPaisa number:</p>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <p className="text-lg font-bold text-white font-mono">{paymentAccount.number}</p>
+                    <button 
+                      onClick={handleCopyNumber}
+                      className="text-[#D4AF37] hover:text-white"
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">Account: {paymentAccount.name}</p>
+                </div>
+
+                <div className="text-xs text-slate-400 space-y-1">
+                  <p>1. Open EasyPaisa app</p>
+                  <p>2. Send <strong>₨ {getServicePrice(selectedService, bookingHours).toLocaleString()}</strong></p>
+                  <p>3. Enter number: <strong>{paymentAccount.number}</strong></p>
+                  <p>4. Note down the TRX ID</p>
+                </div>
+
+                <button
+                  onClick={() => setPaymentStep('verify')}
+                  className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors"
+                >
+                  I Have Paid - Enter Details
+                </button>
+              </div>
+            )}
+
+            {/* STEP 3: Verify Payment */}
+            {paymentStep === 'verify' && paymentAccount && (
+              <form onSubmit={handleSubmitPayment} className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Last 4 Digits of TRX ID</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={trxLast4}
+                    onChange={(e) => setTrxLast4(e.target.value.replace(/\D/g, ''))}
+                    placeholder="e.g. 7845"
+                    required
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100 text-center font-mono tracking-widest"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sender Name (Your Name)</label>
+                  <input
+                    type="text"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    placeholder="Enter your full name"
+                    required
+                    className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Screenshot (Optional)</label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="screenshot-upload"
+                    />
+                    <label 
+                      htmlFor="screenshot-upload"
+                      className="flex items-center justify-center gap-2 w-full bg-[#0f071a] border border-dashed border-[#6A0DAD]/50 rounded-xl px-3 py-3 text-xs text-slate-400 cursor-pointer hover:border-[#6A0DAD]"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {screenshot ? screenshot.name : 'Click to upload screenshot'}
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl py-3 text-xs transition-colors"
+                >
+                  Submit Booking Request
+                </button>
+              </form>
+            )}
+
+          </div>
+        </div>
       )}
     </div>
   );
