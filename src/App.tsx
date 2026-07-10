@@ -810,19 +810,12 @@ export default function App() {
               {currentUser.role === 'Admin' ? 'Supervisor Mode' : `Client: ${currentUser.name}`}
             </span>
             <div className="flex gap-1.5">
-              {currentUser.role === 'Admin' ? (
+              {currentUser.role === 'Admin' && (
                 <button
                   onClick={() => setCurrentUser({ ...currentUser, role: 'Client' })}
                   className="text-[#E9D5FF]/70 hover:text-white font-bold uppercase tracking-wider cursor-pointer transition-colors"
                 >
                   [Switch to Client View]
-                </button>
-              ) : (
-                <button
-                  onClick={() => setCurrentUser({ ...currentUser, role: 'Admin' })}
-                  className="text-[#E9D5FF] hover:text-white font-bold uppercase tracking-wider bg-[#6A0DAD]/35 px-2 py-0.5 rounded border border-[#6A0DAD]/60 shadow-[0_0_10px_rgba(106,13,173,0.25)] cursor-pointer transition-all"
-                >
-                  [ADMIN PANEL]
                 </button>
               )}
             </div>
