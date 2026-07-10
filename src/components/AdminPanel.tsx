@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Plus, Trash2, Edit3, CheckCircle, XCircle, Users, BarChart3, Landmark, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import { Companion, ServiceItem, SupportMessage, Booking } from '../types';
 import { CITIES, SERVICES } from '../data';
 import { supabase } from '../supabaseClient';
 import { uploadToSupabaseStorage } from '../lib/storage';
+
+const ADMIN_EMAIL = 'komailjutt008@gmail.com';
 
 interface AdminPanelProps {
   companions: Companion[];
@@ -35,6 +37,36 @@ export default function AdminPanel({
   onCompleteBooking
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'companions' | 'bookings' | 'add' | 'support'>('companions');
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Strict email check on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      setIsLoading(true);
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error || !user) {
+        setIsAuthorized(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const email = user.email ?? null;
+      setCurrentUserEmail(email);
+      
+      // STRICT check: only exact match to komailjutt008@gmail.com
+      if (email === ADMIN_EMAIL) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
 
   // Form states for adding new companion
   const [newName, setNewName] = useState('');
@@ -104,13 +136,14 @@ export default function AdminPanel({
     e.preventDefault();
     if (!newName.trim() || !newBio.trim()) return;
 
-    // Upload new photos to Supabase Storage
+    // Double-check admin authorization before submitting
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        alert("You must be logged in as an admin to add a companion.");
-        return;
+    if (!user || user.email !== ADMIN_EMAIL) {
+      alert("Unauthorized: Admin access denied.");
+      return;
     }
 
+    // Upload new photos to Supabase Storage
     const uploadedPaths = await Promise.all(newPhotos.map(async (photo, idx) => {
         if (photo.startsWith('data:')) {
             // Convert base64 to Blob
@@ -172,6 +205,36 @@ export default function AdminPanel({
     }
   };
 
+  // ─── UNAUTHORIZED STATE ───
+  if (isLoading) {
+    return (
+      <div className="p-4 pb-24 text-xs animate-fade-in flex items-center justify-center min-h-[300px]">
+        <div className="text-center space-y-3">
+          <ShieldCheck className="w-8 h-8 text-[#6A0DAD] mx-auto animate-pulse" />
+          <p className="text-slate-400 text-xs">Verifying admin credentials...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="p-4 pb-24 text-xs animate-fade-in flex items-center justify-center min-h-[300px]">
+        <div className="bg-[#1a0b2e] border border-rose-900/50 rounded-2xl p-6 max-w-sm w-full text-center space-y-3 shadow-xl">
+          <XCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h2 className="font-black text-sm text-rose-400 uppercase tracking-wider font-display">Access Denied</h2>
+          <p className="text-[10px] text-slate-400 leading-relaxed">
+            This panel is restricted to authorized personnel only.
+          </p>
+          <p className="text-[9px] text-slate-500 font-mono">
+            Logged in as: <span className="text-slate-300">{currentUserEmail ?? 'Not logged in'}</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── AUTHORIZED ADMIN PANEL ───
   return (
     <div id="admin-panel-container" className="p-4 space-y-5 pb-24 text-xs animate-fade-in">
       {/* Header and stats */}
