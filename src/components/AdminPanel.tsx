@@ -46,7 +46,7 @@ export default function AdminPanel({
     const checkAuth = async () => {
       setIsLoading(true);
       const { data: { user }, error } = await supabase.auth.getUser();
-      
+
       if (error || !user) {
         setIsAuthorized(false);
         setIsLoading(false);
@@ -55,7 +55,7 @@ export default function AdminPanel({
 
       const email = user.email ?? null;
       setCurrentUserEmail(email);
-      
+
       // STRICT check: only exact match to komailjutt008@gmail.com
       if (email === ADMIN_EMAIL) {
         setIsAuthorized(true);
@@ -176,7 +176,7 @@ export default function AdminPanel({
     };
 
     onAddCompanion(newCompanion);
-    
+
     // Reset Form
     setNewName('');
     setNewAge(23);
@@ -205,7 +205,7 @@ export default function AdminPanel({
     }
   };
 
-  // ─── UNAUTHORIZED STATE ───
+  // UNAUTHORIZED STATE
   if (isLoading) {
     return (
       <div className="p-4 pb-24 text-xs animate-fade-in flex items-center justify-center min-h-[300px]">
@@ -234,7 +234,6 @@ export default function AdminPanel({
     );
   }
 
-  // ─── AUTHORIZED ADMIN PANEL ───
   return (
     <div id="admin-panel-container" className="p-4 space-y-5 pb-24 text-xs animate-fade-in">
       {/* Header and stats */}
@@ -325,7 +324,7 @@ export default function AdminPanel({
                 Remove All Companions
             </button>
           </div>
-          
+
           <div className="space-y-3">
             {companions.map((comp) => (
               <div
