@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wallet, Landmark, ArrowUpRight, ArrowDownLeft, ShieldCheck, Copy, Check } from 'lucide-react';
+import { Wallet, Landmark, ArrowUpRight, ArrowDownLeft, Copy, Check } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -44,36 +44,30 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
       return;
     }
 
-    // Call the parent update callback
     onTopUp(amount, trxId.trim());
-    setSuccessMsg(`Deposit request submitted! ₨ ${amount.toLocaleString()} has been credited to your wallet.`);
+    setSuccessMsg(`Payment request submitted! Admin will verify your payment within 30 minutes.`);
     setTopUpAmount('');
     setTrxId('');
 
-    // Clear success message after 5 seconds
     setTimeout(() => setSuccessMsg(''), 6000);
   };
 
   return (
     <div id="wallet-screen-container" className="p-4 space-y-6 pb-24 animate-fade-in">
-      {/* Wallet Balance Card */}
+      {/* Payment Info Card - FAKE BALANCE REMOVED */}
       <div className="bg-gradient-to-br from-[#1a0b2e] via-[#6A0DAD]/40 to-[#0f071a] text-white rounded-2xl p-6 shadow-xl border border-[#6A0DAD]/35 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-32 h-32 bg-[#6A0DAD]/10 rounded-full blur-2xl" />
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-[#E9D5FF]" />
-            <span className="text-sm font-medium text-[#E9D5FF]/80 font-display">EasyPaisa Secure Balance</span>
-          </div>
-          <span className="bg-[#D4AF37]/20 text-[#D4AF37] text-[10px] px-2 py-0.5 rounded-full font-bold border border-[#D4AF37]/35 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" /> Secure Escrow
-          </span>
+        <div className="flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-[#E9D5FF]" />
+          <span className="text-sm font-medium text-[#E9D5FF]/80 font-display">EasyPaisa Payment</span>
         </div>
         <div className="mt-4">
-          <span className="text-3xl font-black tracking-tight font-display text-white">₨ {balance.toLocaleString()}</span>
-          <span className="text-xs text-[#E9D5FF] ml-1">PKR</span>
+          <p className="text-sm text-[#E9D5FF]">
+            Pay after booking via EasyPaisa. Admin will verify your payment.
+          </p>
         </div>
         <p className="text-xs text-[#E9D5FF]/75 mt-2">
-          Use this balance to instantly book approved companions. Safe, held in escrow.
+          Send payment to our EasyPaisa account after you book a companion.
         </p>
       </div>
 
@@ -81,7 +75,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
       <div className="bg-[#1a0b2e] border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
         <div className="flex items-center gap-2 border-b border-white/5 pb-2">
           <Landmark className="w-4.5 h-4.5 text-[#E9D5FF]" />
-          <h3 className="font-semibold text-sm text-slate-100 font-display">How to Top Up via EasyPaisa</h3>
+          <h3 className="font-semibold text-sm text-slate-100 font-display">How to Pay via EasyPaisa</h3>
         </div>
         
         <ol className="text-xs text-slate-400 space-y-2.5 list-decimal list-inside">
@@ -98,14 +92,14 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
               {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-[#D4AF37]/70" />}
             </button>
           </li>
-          <li>Transfer your desired amount and note down the 11-digit <strong>TRX ID</strong>.</li>
-          <li>Submit the form below for instant balance credit.</li>
+          <li>Transfer the booking amount and note down the <strong>TRX ID</strong>.</li>
+          <li>Submit the form below for admin verification.</li>
         </ol>
 
         {/* Submit Form */}
         <form onSubmit={handleSubmitTopUp} className="space-y-3 pt-2">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1 uppercase tracking-wider">Amount to Credit (PKR)</label>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1 uppercase tracking-wider">Amount Paid (PKR)</label>
             <input
               type="number"
               value={topUpAmount}
@@ -135,17 +129,17 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
             type="submit"
             className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-semibold rounded-xl py-2.5 text-xs transition-colors shadow-lg cursor-pointer"
           >
-            Credit Balance Instantly
+            Submit Payment for Verification
           </button>
         </form>
       </div>
 
       {/* Transaction History */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-sm text-slate-100 px-1 font-display">Transaction History</h3>
+        <h3 className="font-semibold text-sm text-slate-100 px-1 font-display">Payment History</h3>
         {transactions.length === 0 ? (
           <div className="bg-[#1a0b2e]/40 border border-white/5 rounded-xl p-6 text-center text-xs text-slate-500">
-            No transactions found yet.
+            No payments found yet.
           </div>
         ) : (
           <div className="space-y-2">
