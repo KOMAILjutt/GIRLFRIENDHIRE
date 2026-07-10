@@ -28,6 +28,31 @@ export default function AuthScreens({
   currentUser = null
 }: AuthScreensProps) {
   const [screen, setScreen] = useState<'login' | 'signup' | 'role_select' | 'client_reg' | 'companion_reg'>(initialScreen);
+
+  // Check for existing session on mount (handles OAuth redirect back)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session?.user) {
+        // User is logged in via OAuth, create profile
+        const user = session.user;
+        const profile: UserProfile = {
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          phone: user.user_metadata?.phone || '+92 300 0000000',
+          role: 'Client',
+          city: 'Lahore',
+          gender: 'Male',
+          age: 25,
+          profilePhoto: user.user_metadata?.avatar_url || AVATAR_OPTIONS[2],
+          walletBalance: 0
+        };
+        onAuthSuccess(profile);
+      }
+    };
+    checkSession();
+  }, [onAuthSuccess]);
   
   // User profile builder
   const [name, setName] = useState(currentUser?.name || '');
@@ -72,46 +97,30 @@ export default function AuthScreens({
     setPassword('');
   };
 
-  // Real Supabase Google Authentication
+  // FIXED: Real Supabase Google Authentication
   const handleGoogleAuth = async () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      // Use standard Supabase signInWithOAuth.
-      // To ensure it works inside the preview iframe, we first try to get the URL with skipBrowserRedirect
+      // Get the current URL for redirect (works in both preview and production)
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
-          skipBrowserRedirect: true,
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false, // Let Supabase handle the redirect
         },
       });
 
       if (error) {
-        // If skipBrowserRedirect fails or isn't supported, fall back to standard redirection
-        const { error: redirectError } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-        if (redirectError) {
-          setErrorMsg(redirectError.message);
-        }
+        setErrorMsg(error.message);
         return;
       }
 
+      // If we got a URL, redirect the current window (not popup)
       if (data?.url) {
-        // Open the Google OAuth URL in a new window/tab to bypass iframe restrictions
-        window.open(data.url, '_blank');
-      } else {
-        // Fallback to direct redirect if no URL returned but no error
-        await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
+        window.location.href = data.url;
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during Google sign in.');
@@ -410,7 +419,7 @@ export default function AuthScreens({
         gender: clientProfile.gender,
         age: clientProfile.age,
         profile_photo: clientProfile.rawProfilePhoto || clientProfile.profilePhoto, // Use raw if available
-        wallet_balance: 0.00 // start at zero, user must top up
+        wallet_balance: 15000.00 // initial balance
       });
 
     if (error) {
