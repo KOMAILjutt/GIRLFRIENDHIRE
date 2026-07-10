@@ -1,8 +1,9 @@
 export interface ServiceItem {
-   description?: string;
-  icon?: string;
-  tags?: string[];
-  discountPercent?: number;
+  id: string;
+  name: string;
+  category: 'Basic' | 'Standard' | 'Premium' | 'Exclusive';
+  basePrice: number;
+  perHourRate: number;
 }
 
 export interface Review {
@@ -15,6 +16,7 @@ export interface Review {
 
 export interface Companion {
   id: string;
+  userId?: string; // Link to the user who registered as companion
   name: string;
   age: number;
   gender: 'Male' | 'Female' | 'Other';
@@ -24,7 +26,7 @@ export interface Companion {
   photos: string[]; // Minimum 3 for companions, 1 for clients
   services: {
     serviceId: string;
-    customBasePrice?: number; // Optional custom pricing override
+    customBasePrice?: number;
     customPerHourRate?: number;
   }[];
   rating: number;
@@ -46,7 +48,7 @@ export interface Booking {
   durationHours: number;
   totalPrice: number;
   meetingLocation: string;
-  bookingDate: string; // YYYY-MM-DD (must be minimum 2 days from today)
+  bookingDate: string;
   timeSlot: 'Morning 9-12' | 'Afternoon 12-3' | 'Evening 3-6' | 'Night 6-9';
   status: 'Pending' | 'Confirmed' | 'Completed';
   createdAt: string;
@@ -69,13 +71,13 @@ export interface UserProfile {
   city?: string;
   profilePhoto?: string;
   rawProfilePhoto?: string;
-  // Companion specific registration fields
   bio?: string;
   interests?: string[];
   photos?: string[];
   rawPhotos?: string[];
   services?: { serviceId: string }[];
   isApprovedCompanion?: boolean;
+  walletBalance?: number;
 }
 
 export interface SupportMessage {
