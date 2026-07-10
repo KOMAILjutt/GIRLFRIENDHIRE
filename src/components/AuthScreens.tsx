@@ -28,31 +28,6 @@ export default function AuthScreens({
   currentUser = null
 }: AuthScreensProps) {
   const [screen, setScreen] = useState<'login' | 'signup' | 'role_select' | 'client_reg' | 'companion_reg'>(initialScreen);
-
-  // Check for existing session on mount (handles OAuth redirect back)
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session?.user) {
-        // User is logged in via OAuth, create profile
-        const user = session.user;
-        const profile: UserProfile = {
-          id: user.id,
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          phone: user.user_metadata?.phone || '+92 300 0000000',
-          role: 'Client',
-          city: 'Lahore',
-          gender: 'Male',
-          age: 25,
-          profilePhoto: user.user_metadata?.avatar_url || AVATAR_OPTIONS[2],
-          walletBalance: 0
-        };
-        onAuthSuccess(profile);
-      }
-    };
-    checkSession();
-  }, [onAuthSuccess]);
   
   // User profile builder
   const [name, setName] = useState(currentUser?.name || '');
@@ -97,19 +72,15 @@ export default function AuthScreens({
     setPassword('');
   };
 
-  // FIXED: Real Supabase Google Authentication
+  // Real Supabase Google Authentication - Fixed for production
   const handleGoogleAuth = async () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      // Get the current URL for redirect (works in both preview and production)
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false, // Let Supabase handle the redirect
+          redirectTo: window.location.origin + '/auth/callback',
         },
       });
 
@@ -118,7 +89,7 @@ export default function AuthScreens({
         return;
       }
 
-      // If we got a URL, redirect the current window (not popup)
+      // If we got a URL, redirect the whole page (not popup)
       if (data?.url) {
         window.location.href = data.url;
       }
@@ -419,7 +390,7 @@ export default function AuthScreens({
         gender: clientProfile.gender,
         age: clientProfile.age,
         profile_photo: clientProfile.rawProfilePhoto || clientProfile.profilePhoto, // Use raw if available
-        wallet_balance: 15000.00 // initial balance
+        wallet_balance: 0.00 // start at zero
       });
 
     if (error) {
