@@ -35,7 +35,7 @@ export default function App() {
   // Global States
   const [companions, setCompanions] = useState<Companion[]>([]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number>(15000); // 15,000 PKR seeded starting balance
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -146,7 +146,7 @@ export default function App() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setCurrentUser(null);
-        setWalletBalance(15000);
+        setWalletBalance(0);
       } else {
         const user = session.user;
         
@@ -188,7 +188,7 @@ export default function App() {
             isApprovedCompanion: profile.is_approved_companion
           };
           setCurrentUser(mappedProfile);
-          setWalletBalance(Number(profile.wallet_balance ?? 15000));
+          setWalletBalance(Number(profile.wallet_balance ?? 0));
         } else {
           // Create user profile if none exists in database
           const newProfile = {
@@ -201,7 +201,7 @@ export default function App() {
             gender: 'Male',
             age: 26,
             profile_photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100',
-            wallet_balance: 15000.00
+            wallet_balance: 0
           };
 
           const { error: insertError } = await supabase
@@ -222,7 +222,7 @@ export default function App() {
               isApprovedCompanion: false
             };
             setCurrentUser(mappedProfile);
-            setWalletBalance(15000);
+            setWalletBalance(0);
           }
         }
       }
