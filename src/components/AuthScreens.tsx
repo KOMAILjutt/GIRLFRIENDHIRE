@@ -5,15 +5,6 @@ import { CITIES, INTEREST_OPTIONS, SERVICES } from '../data';
 import { supabase } from '../supabaseClient';
 import { uploadToSupabaseStorage, resolveSignedUrls } from '../lib/storage';
 
-const AVATAR_OPTIONS = [
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=200'
-];
-
 interface AuthScreensProps {
   onAuthSuccess: (profile: UserProfile) => void;
   onRegisterCompanionSubmit: (companionProfile: any) => void;
@@ -39,18 +30,14 @@ export default function AuthScreens({
   const [city, setCity] = useState('Karachi');
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Female');
   const [age, setAge] = useState<number>(22);
-  const [profilePhoto, setProfilePhoto] = useState(AVATAR_OPTIONS[0]); // Default first
+  const [profilePhoto, setProfilePhoto] = useState(''); // Must upload from gallery
   const [rawProfilePhoto, setRawProfilePhoto] = useState<string | null>(null);
   
   // Companion specific
   const [bio, setBio] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  // Needs 3 photos
-  const [companionPhotos, setCompanionPhotos] = useState<string[]>([
-    AVATAR_OPTIONS[1],
-    AVATAR_OPTIONS[3],
-    AVATAR_OPTIONS[5]
-  ]);
+  // Needs 3 photos - user must upload from gallery
+  const [companionPhotos, setCompanionPhotos] = useState<string[]>([]);
   const [rawCompanionPhotos, setRawCompanionPhotos] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<{ serviceId: string; customBasePrice?: number; customPerHourRate?: number }[]>([]);
 
@@ -134,7 +121,7 @@ export default function AuthScreens({
         name: 'Regional Admin',
         email: 'admin@girlfriendhire.pk',
         role: 'Admin',
-        profilePhoto: AVATAR_OPTIONS[4]
+        profilePhoto: ''
       };
       onAuthSuccess(adminProfile);
       return;
@@ -159,7 +146,7 @@ export default function AuthScreens({
         city: 'Lahore',
         gender: 'Male',
         age: 26,
-        profilePhoto: AVATAR_OPTIONS[2]
+        profilePhoto: ''
       };
       onAuthSuccess(mockProfile);
     } catch (err: any) {
@@ -452,7 +439,10 @@ export default function AuthScreens({
     e.preventDefault();
     setErrorMsg('');
 
-    // Photos: 1+ required, empty slots stay blank
+    if (companionPhotos.length < 3) {
+      setErrorMsg('You must upload at least 3 photos (front face, full body, casual).');
+      return;
+    }
 
     if (!bio.trim() || bio.split(/\s+/).length > 200) {
       setErrorMsg('Bio is required and must not exceed 200 words.');
@@ -919,11 +909,15 @@ export default function AuthScreens({
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Upload Profile Photo (Mandatory)</label>
               
               <div className="flex items-center gap-4 bg-[#1a0b2e] border border-white/10 p-3.5 rounded-2xl shadow-md">
-                <div className="w-14 h-14 bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl overflow-hidden shrink-0">
-                  <img src={profilePhoto} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="w-14 h-14 bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                  {profilePhoto ? (
+                    <img src={profilePhoto} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="text-[8px] text-slate-500 text-center px-1">No Photo</span>
+                  )}
                 </div>
                 <div className="space-y-1.5 flex-1">
-                  <span className="block text-[10px] text-slate-400">Select an avatar or generate mock files</span>
+                  <span className="block text-[10px] text-slate-400">Upload your photo from device gallery</span>
                   <div className="flex gap-1">
                     <button
                       type="button"
@@ -980,7 +974,7 @@ export default function AuthScreens({
                       email,
                       phone,
                       role: 'Client',
-                      profilePhoto: companionPhotos[0],
+                      profilePhoto: companionPhotos[0] || '',
                       city,
                       gender,
                       age
@@ -1077,18 +1071,19 @@ export default function AuthScreens({
                 {/* Step 3: Photos - MUST UPLOAD 3 */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Upload Photos (At least 1 required)
+                    Upload Photos from Gallery (At least 1 required)
                   </label>
                   
                   <div className="grid grid-cols-3 gap-2 bg-[#1a0b2e] border border-white/10 p-2.5 rounded-xl shadow-md">
                     {companionPhotos.map((ph, idx) => (
                       <div key={idx} className="space-y-1.5 flex flex-col items-center">
-                        <div className="w-full aspect-square bg-[#0f071a] border border-[#6A0DAD]/35 rounded-lg overflow-hidden relative shadow-inner">
+                        <div className="w-full aspect-square bg-[#0f071a] border border-[#6A0DAD]/35 rounded-lg overflow-hidden relative shadow-inner flex items-center justify-center">
                           {ph ? (
                             <img src={ph} alt={`Upload ${idx+1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-950/40 text-[9px] text-center p-1">
-                              No Image
+                            <div className="flex flex-col items-center justify-center text-slate-600 text-[9px] text-center p-1">
+                              <Upload className="w-4 h-4 text-slate-700 mb-1" />
+                              <span>Tap Camera<br/>to Upload</span>
                             </div>
                           )}
                           <div className="absolute top-1 left-1 bg-black/60 px-1 py-0.5 text-[7px] text-slate-300 rounded font-mono">
