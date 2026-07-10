@@ -79,7 +79,7 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
       <div className="bg-gradient-to-r from-[#6A0DAD] to-[#4c0780] rounded-2xl p-4 text-center text-white shadow-lg">
         <h2 className="text-sm font-bold font-display uppercase tracking-wider">Start Booking from 500 Only!</h2>
         <p className="text-[11px] mt-1 text-purple-100">
-          First person first time booking has 70% off!
+           First person first time booking has 30% off!
         </p>
       </div>
 
