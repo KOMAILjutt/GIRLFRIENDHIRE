@@ -80,7 +80,7 @@ export default function WalletScreen({ balance, transactions, onTopUp }: WalletS
           <Landmark className="w-4.5 h-4.5 text-[#E9D5FF]" />
           <h3 className="font-semibold text-sm text-slate-100 font-display">How to Add Balance</h3>
         </div>
-        
+
         <ol className="text-xs text-slate-400 space-y-2.5 list-decimal list-inside">
           <li>Open your <strong>EasyPaisa App</strong>.</li>
           <li>Choose <strong>Send Money</strong> &gt; <strong>Send to Mobile Account</strong>.</li>
