@@ -18,14 +18,14 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('All');
-  
+
   // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
   const [selectedService, setSelectedService] = useState<string>('');
-  const [bookingHours, setBookingHours] = useState<number>(1);
+  const [bookingHours, setBookingHours] = useState<number>(3);
   const [paymentAccount, setPaymentAccount] = useState<{number: string, name: string} | null>(null);
-  
+
   // Payment verification state
   const [trxLast4, setTrxLast4] = useState('');
   const [senderName, setSenderName] = useState('');
@@ -66,10 +66,24 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
     return service.basePrice + (service.perHourRate * (hours - 1));
   };
 
+  const getCompanionServices = (comp: Companion) => {
+    return comp.services.map((cs) => {
+      const original = SERVICES.find((s) => s.id === cs.serviceId);
+      if (!original) return null;
+      return {
+        serviceId: cs.serviceId,
+        name: original.name,
+        basePrice: cs.customBasePrice || original.basePrice,
+        perHourRate: original.perHourRate
+      };
+    }).filter(Boolean) as { serviceId: string; name: string; basePrice: number; perHourRate: number }[];
+  };
+
   const handleBookNow = (comp: Companion) => {
+    const compServices = getCompanionServices(comp);
     setSelectedCompanion(comp);
-    setSelectedService(comp.services[0]?.serviceId || '');
-    setBookingHours(1);
+    setSelectedService(compServices[0]?.serviceId || '');
+    setBookingHours(3);
     setPaymentStep('select');
     setTrxLast4('');
     setSenderName('');
@@ -78,7 +92,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
   };
 
   const handleProceedToPayment = () => {
-    // Randomly select one payment account
     const randomIndex = Math.floor(Math.random() * PAYMENT_ACCOUNTS.length);
     setPaymentAccount(PAYMENT_ACCOUNTS[randomIndex]);
     setPaymentStep('pay');
@@ -94,7 +107,7 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
 
   const handleSubmitPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (trxLast4.length !== 4) {
       alert('Please enter last 4 digits of TRX ID');
       return;
@@ -104,7 +117,6 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
       return;
     }
 
-    // Here you would send to Supabase
     console.log('Booking submitted:', {
       companion: selectedCompanion?.id,
       service: selectedService,
@@ -321,7 +333,7 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
       {showBookingModal && selectedCompanion && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a0b2e] border border-[#6A0DAD]/50 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
-            
+
             {/* Modal Header */}
             <div className="p-4 border-b border-white/10 flex justify-between items-center">
               <h2 className="text-sm font-bold text-white font-display">Book {selectedCompanion.name}</h2>
@@ -343,26 +355,23 @@ export default function BrowsePage({ companions, onSelectCompanion }: BrowsePage
                     onChange={(e) => setSelectedService(e.target.value)}
                     className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
                   >
-                    {selectedCompanion.services.map((cs) => {
-                      const svc = SERVICES.find(s => s.id === cs.serviceId);
-                      return svc ? (
-                        <option key={cs.serviceId} value={cs.serviceId}>
-                          {svc.name} - ₨ {getServicePrice(cs.serviceId, 1).toLocaleString()}
-                        </option>
-                      ) : null;
-                    })}
+                    {getCompanionServices(selectedCompanion).map((svc) => (
+                      <option key={svc.serviceId} value={svc.serviceId}>
+                        {svc.name} - ₨ {svc.basePrice.toLocaleString()}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Hours</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Hours (Minimum 3)</label>
                   <select
                     value={bookingHours}
                     onChange={(e) => setBookingHours(Number(e.target.value))}
                     className="w-full bg-[#0f071a] border border-[#6A0DAD]/35 rounded-xl px-3 py-2.5 text-xs text-slate-100"
                   >
-                    {[1,2,3,4,5,6,8].map(h => (
-                      <option key={h} value={h}>{h} Hour{h>1?'s':''}</option>
+                    {[3,4,5,6,8,10,12].map(h => (
+                      <option key={h} value={h}>{h} Hours</option>
                     ))}
                   </select>
                 </div>
