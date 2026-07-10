@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Companion, Booking, UserProfile, SupportMessage, Transaction } from './types';
-import { SERVICES } from './data';
 import BrowsePage from './components/BrowsePage';
 import ProfilePage from './components/ProfilePage';
 import AdminPanel from './components/AdminPanel';
@@ -8,8 +7,8 @@ import WalletScreen from './components/WalletScreen';
 import SupportScreen from './components/SupportScreen';
 import BottomNav from './components/BottomNav';
 import AuthScreens from './components/AuthScreens';
+import { supabase } from './supabaseClient';
 
-// Demo companions data (replace with your Supabase fetch)
 const DEMO_COMPANIONS: Companion[] = [
   {
     id: 'comp_1',
@@ -17,7 +16,7 @@ const DEMO_COMPANIONS: Companion[] = [
     age: 24,
     gender: 'Female',
     city: 'Lahore',
-    bio: 'Friendly and outgoing companion. I enjoy fine dining, movies, and long conversations. Available for social events and private meetups.',
+    bio: 'Friendly and outgoing companion. I enjoy fine dining, movies, and long conversations.',
     interests: ['Dining', 'Movies', 'Travel', 'Conversation'],
     photos: [
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
@@ -38,7 +37,7 @@ const DEMO_COMPANIONS: Companion[] = [
     age: 26,
     gender: 'Female',
     city: 'Karachi',
-    bio: 'Elegant and sophisticated. Perfect for business dinners and social gatherings. I speak fluent English and Urdu.',
+    bio: 'Elegant and sophisticated. Perfect for business dinners and social gatherings.',
     interests: ['Business', 'Dining', 'Shopping', 'Events'],
     photos: [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
@@ -59,7 +58,7 @@ const DEMO_COMPANIONS: Companion[] = [
     age: 22,
     gender: 'Female',
     city: 'Islamabad',
-    bio: 'Young and energetic. I love outdoor activities, hiking, and adventure sports. Great travel companion!',
+    bio: 'Young and energetic. I love outdoor activities, hiking, and adventure sports.',
     interests: ['Travel', 'Hiking', 'Adventure', 'Photography'],
     photos: [
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
@@ -77,7 +76,6 @@ const DEMO_COMPANIONS: Companion[] = [
 ];
 
 export default function App() {
-  // ─── STATE ───
   const [activeTab, setActiveTab] = useState('browse');
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -87,21 +85,47 @@ export default function App() {
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [companions, setCompanions] = useState<Companion[]>(DEMO_COMPANIONS);
 
-  // ─── HANDLERS ───
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const profile: UserProfile = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: 'Client',
+          profilePhoto: session.user.user_metadata?.avatar_url || ''
+        };
+        setUserProfile(profile);
+      }
+    };
+    checkSession();
 
-  // Auth success
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const profile: UserProfile = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: 'Client',
+          profilePhoto: session.user.user_metadata?.avatar_url || ''
+        };
+        setUserProfile(profile);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleAuthSuccess = (profile: UserProfile) => {
     setUserProfile(profile);
-    // Set wallet balance from profile or default to 0
-    setWalletBalance(profile.walletBalance || 0);
+    setWalletBalance(0);
   };
 
-  // Register companion
   const handleRegisterCompanion = (companionProfile: any) => {
     setCompanions([...companions, companionProfile]);
   };
 
-  // Book companion (from BrowsePage "Book Now" button)
   const handleBookCompanion = (bookingData: any) => {
     const newBooking: Booking = {
       id: `book_${Date.now()}`,
@@ -109,7 +133,7 @@ export default function App() {
       clientId: userProfile?.id || 'guest',
       companionId: bookingData.companionId,
       companionName: bookingData.companionName,
-      companionPhoto: companions.find(c => c.id === bookingData.companionId)?.photos[0] || '',
+      companionPhoto: bookingData.companionPhoto || '',
       serviceName: bookingData.serviceName,
       durationHours: bookingData.durationHours,
       totalPrice: bookingData.totalPrice,
@@ -118,39 +142,38 @@ export default function App() {
       meetingLocation: bookingData.meetingLocation,
       status: 'Pending',
       createdAt: new Date().toLocaleDateString(),
-      paymentDetails: {
-        trxLast4: bookingData.trxLast4,
-        senderName: bookingData.senderName,
-        paymentTo: bookingData.paymentTo,
-        paymentAccountName: bookingData.paymentAccountName
-      }
+      paymentDetails: bookingData.paymentDetails
     };
     setBookings(prev => [newBooking, ...prev]);
+    setWalletBalance(prev => Math.max(0, prev - bookingData.totalPrice));
+    const newTx: Transaction = {
+      id: `tx_${Date.now()}`,
+      type: 'payment',
+      amount: bookingData.totalPrice,
+      description: `Booking: ${bookingData.companionName} - ${bookingData.serviceName}`,
+      date: new Date().toLocaleDateString(),
+      status: 'Pending'
+    };
+    setTransactions(prev => [newTx, ...prev]);
   };
 
-  // Book from ProfilePage
   const handleBookFromProfile = (service: any) => {
     if (!selectedCompanion) return;
-    // Open booking modal via BrowsePage logic or navigate
-    console.log('Book from profile:', service);
   };
 
-  // Wallet top-up
   const handleTopUp = (amount: number, trxId: string) => {
+    setWalletBalance(prev => prev + amount);
     const newTx: Transaction = {
       id: `tx_${Date.now()}`,
       type: 'deposit',
       amount,
       description: `EasyPaisa Top-up (TRX: ${trxId})`,
       date: new Date().toLocaleDateString(),
-      status: 'Pending'
+      status: 'Completed'
     };
     setTransactions(prev => [newTx, ...prev]);
-    // Add to wallet balance immediately (admin will verify later)
-    setWalletBalance(prev => prev + amount);
   };
 
-  // Support message
   const handleSendMessage = (text: string, sender: 'user' | 'admin') => {
     const newMsg: SupportMessage = {
       id: `msg_${Date.now()}`,
@@ -161,66 +184,55 @@ export default function App() {
     setSupportMessages(prev => [...prev, newMsg]);
   };
 
-  // Admin: Approve/Reject companion
   const handleApproveReject = (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => {
     setCompanions(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
   };
 
-  // Admin: Delete companion
   const handleDeleteCompanion = (id: string) => {
     setCompanions(prev => prev.filter(c => c.id !== id));
   };
 
-  // Admin: Remove all
   const handleRemoveAll = () => {
     setCompanions([]);
   };
 
-  // Admin: Add companion
   const handleAddCompanion = (newComp: Companion) => {
     setCompanions(prev => [...prev, newComp]);
   };
 
-  // Admin: Edit companion
   const handleEditCompanion = (comp: Companion) => {
     setCompanions(prev => prev.map(c => c.id === comp.id ? comp : c));
   };
 
-  // Admin: Send reply
   const handleSendAdminReply = (text: string) => {
     handleSendMessage(text, 'admin');
   };
 
-  // Admin: Approve booking
   const handleApproveBooking = (id: string) => {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Confirmed' as const } : b));
-    // Add to transactions
+  };
+
+  const handleRejectBooking = (id: string) => {
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Rejected' as const } : b));
     const booking = bookings.find(b => b.id === id);
     if (booking) {
+      setWalletBalance(prev => prev + booking.totalPrice);
       setTransactions(prev => [{
         id: `tx_${Date.now()}`,
-        type: 'payment',
+        type: 'refund',
         amount: booking.totalPrice,
-        description: `Booking: ${booking.companionName}`,
+        description: `Refund: ${booking.companionName}`,
         date: new Date().toLocaleDateString(),
         status: 'Completed'
       }, ...prev]);
     }
   };
 
-  // Admin: Reject booking
-  const handleRejectBooking = (id: string) => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Rejected' as const } : b));
-  };
-
-  // Admin: Complete booking
   const handleCompleteBooking = (id: string) => {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Completed' as const } : b));
   };
 
-  // ─── RENDER CONTENT ───
   const renderContent = () => {
-    // Not logged in → Auth screens
     if (!userProfile) {
       return (
         <AuthScreens
@@ -230,7 +242,6 @@ export default function App() {
       );
     }
 
-    // Profile page (when companion selected)
     if (selectedCompanion && activeTab === 'profile') {
       return (
         <ProfilePage
@@ -241,7 +252,6 @@ export default function App() {
       );
     }
 
-    // Tab-based rendering
     switch (activeTab) {
       case 'home':
       case 'browse':
@@ -253,6 +263,8 @@ export default function App() {
               setActiveTab('profile');
             }}
             onBookCompanion={handleBookCompanion}
+            walletBalance={walletBalance}
+            hasPreviousBookings={bookings.length > 0}
           />
         );
 
@@ -279,7 +291,6 @@ export default function App() {
         );
 
       case 'support':
-        // Admin sees AdminPanel, User sees SupportScreen
         if (userProfile.role === 'Admin') {
           return (
             <AdminPanel
@@ -314,20 +325,18 @@ export default function App() {
               setActiveTab('profile');
             }}
             onBookCompanion={handleBookCompanion}
+            walletBalance={walletBalance}
+            hasPreviousBookings={bookings.length > 0}
           />
         );
     }
   };
 
-  // ─── JSX ───
   return (
     <div className="min-h-screen bg-[#0f071a] text-slate-100 font-sans">
-      {/* Main Content */}
       <main className="pb-20">
         {renderContent()}
       </main>
-
-      {/* Bottom Navigation */}
       {userProfile && (
         <BottomNav
           activeTab={activeTab}
