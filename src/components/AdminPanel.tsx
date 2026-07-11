@@ -12,7 +12,7 @@ interface AdminPanelProps {
   onApproveReject: (id: string, newStatus: 'Approved' | 'Pending' | 'Rejected') => void;
   onDeleteCompanion: (id: string) => void;
   onRemoveAllCompanions: () => void;
-  onAddCompanion: (newComp: Companion) => void;
+  onAddCompanion: (newComp: Companion) => Promise<void> | void;
   onEditCompanion: (comp: Companion) => void;
   supportMessages: SupportMessage[];
   onSendAdminReply: (text: string) => void;
@@ -134,60 +134,85 @@ export default function AdminPanel({
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newBio.trim()) return;
+    
+    // 1. Check name and bio are filled
+    if (!newName.trim() || !newBio.trim()) {
+      alert("Please fill in name and bio!");
+      return;
+    }
 
-    // Double-check admin authorization before submitting
+    // 2. Double-check admin authorization before submitting
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.email !== ADMIN_EMAIL) {
       alert("Unauthorized: Admin access denied.");
       return;
     }
 
-    // Upload new photos to Supabase Storage
-    const uploadedPaths = await Promise.all(newPhotos.map(async (photo, idx) => {
+    // 3. Show loading so user knows something is happening
+    setIsLoading(true);
+
+    try {
+      // 4. Upload photos to Supabase Storage (this takes time!)
+      console.log("Uploading photos...");
+      const uploadedPaths = await Promise.all(newPhotos.map(async (photo, idx) => {
         if (photo.startsWith('data:')) {
-            // Convert base64 to Blob
-            const response = await fetch(photo);
-            const blob = await response.blob();
-            const extension = 'jpg';
-            return await uploadToSupabaseStorage(user.id, 'companion', `admin_add_${Date.now()}_${idx}`, blob, extension);
+          const response = await fetch(photo);
+          const blob = await response.blob();
+          const extension = 'jpg';
+          const path = await uploadToSupabaseStorage(user.id, 'companion', `admin_add_${Date.now()}_${idx}`, blob, extension);
+          console.log(`Photo ${idx} uploaded to:`, path);
+          return path;
         }
-        return photo; // Already a URL or path
-    }));
+        console.log(`Photo ${idx} is already a URL:`, photo);
+        return photo;
+      }));
 
-    const companionServicesObj = selectedServices.map(sid => ({
-      serviceId: sid
-    }));
+      const companionServicesObj = selectedServices.map(sid => ({
+        serviceId: sid
+      }));
 
-    const newCompanion: Companion = {
-      id: `comp_${Date.now()}`,
-      name: newName,
-      age: newAge,
-      gender: newGender,
-      city: newCity,
-      bio: newBio,
-      interests: ['Conversation', 'Dining', 'Events'],
-      photos: uploadedPaths,
-      services: companionServicesObj,
-      rating: 5.0,
-      reviews: [],
-      status: 'Approved', // Admin creations are instantly approved
-      isVerified: true
-    };
+      const newCompanion: Companion = {
+        id: `comp_${Date.now()}`,
+        name: newName,
+        age: newAge,
+        gender: newGender,
+        city: newCity,
+        bio: newBio,
+        interests: ['Conversation', 'Dining', 'Events'],
+        photos: uploadedPaths,
+        rawPhotos: uploadedPaths,
+        services: companionServicesObj,
+        rating: 5.0,
+        reviews: [],
+        status: 'Approved',
+        isVerified: true
+      };
 
-    onAddCompanion(newCompanion);
+      // 5. SAVE TO DATABASE — WAIT for it to finish!
+      console.log("Saving companion...");
+      await onAddCompanion(newCompanion);
 
-    // Reset Form
-    setNewName('');
-    setNewAge(23);
-    setNewBio('');
-    setSelectedServices(['srv_1', 'srv_3']);
-    setNewPhotos([
+      // 6. Only clear form AFTER success
+      console.log("Success! Clearing form...");
+      setNewName('');
+      setNewAge(23);
+      setNewBio('');
+      setSelectedServices(['srv_1', 'srv_3']);
+      setNewPhotos([
         'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200'
-    ]);
-    setActiveTab('companions');
+      ]);
+      setActiveTab('companions');
+      
+      alert('✅ Companion added successfully!');
+
+    } catch (error) {
+      console.error('Oops! Error adding companion:', error);
+      alert('❌ Failed to add companion. Check console (F12).');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSendAdminMessage = (e: React.FormEvent) => {
@@ -206,7 +231,7 @@ export default function AdminPanel({
   };
 
   // UNAUTHORIZED STATE
-  if (isLoading) {
+  if (isLoading && !currentUserEmail) {
     return (
       <div className="p-4 pb-24 text-xs animate-fade-in flex items-center justify-center min-h-[300px]">
         <div className="text-center space-y-3">
@@ -675,9 +700,14 @@ export default function AdminPanel({
 
             <button
               type="submit"
-              className="w-full bg-[#6A0DAD] hover:brightness-110 text-white font-bold rounded-xl py-3 text-xs transition-colors shadow-lg cursor-pointer"
+              disabled={isLoading}
+              className={`w-full font-bold rounded-xl py-3 text-xs transition-colors shadow-lg cursor-pointer ${
+                isLoading 
+                  ? 'bg-[#6A0DAD]/50 text-white/70 cursor-not-allowed' 
+                  : 'bg-[#6A0DAD] hover:brightness-110 text-white'
+              }`}
             >
-              Add and Pre-Verify Instantly
+              {isLoading ? 'Adding... Please wait' : 'Add and Pre-Verify Instantly'}
             </button>
           </div>
         </form>
